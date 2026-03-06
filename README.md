@@ -48,9 +48,9 @@ The scope of this project includes the design, development, testing, and deploym
 ### 1.4 References
 
 - **MongoDB** – For document-based data storage: https://www.mongodb.com/
-- **Express.js** – For building the backend web framework
-- **React.js** – For creating the interactive user interface
-- **Node.js** – As the JavaScript runtime environment
+- **Express.js** – For building the backend web framework: http://Express.js
+- **React.js** – For creating the interactive user interface: http://React.js
+- **Node.js** – As the JavaScript runtime environment: http://Node.js
 - **Environmental Standards** – Guidelines for safe disposal of toxic electronic materials
 
 ### 1.5 Overview
