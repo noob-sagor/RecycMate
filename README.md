@@ -1,9 +1,10 @@
-# 📒 RecycMate
+# RecycMate
 ### *An E-Waste Collection And Recycling Tracker Web Application*
 
-**Software Requirements Specification**
-**Link to the SRS Document: https://tinyurl.com/RecycMate**
-**SRS Version: V.01**
+**README.md version: V0.1**
+
+**Link to the Software Requirements Specification: https://tinyurl.com/RecycMate**
+
 
 ---
 
