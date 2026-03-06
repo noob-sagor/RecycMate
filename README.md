@@ -2,7 +2,7 @@
 ### *An E-Waste Collection And Recycling Tracker Web Application*
 
 **Software Requirements Specification**
-
+**Link to the SRS Document: https://tinyurl.com/RecycMate**
 **SRS Version: V.01**
 
 ---
@@ -48,9 +48,9 @@ The scope of this project includes the design, development, testing, and deploym
 ### 1.4 References
 
 - **MongoDB** – For document-based data storage: https://www.mongodb.com/
-- **Express.js** – For building the backend web framework: http://Express.js
-- **React.js** – For creating the interactive user interface: http://React.js
-- **Node.js** – As the JavaScript runtime environment: http://Node.js
+- **Express.js** – For building the backend web framework: https://expressjs.com/
+- **React.js** – For creating the interactive user interface: https://react.dev/
+- **Node.js** – As the JavaScript runtime environment: https://nodejs.org/en
 - **Environmental Standards** – Guidelines for safe disposal of toxic electronic materials
 
 ### 1.5 Overview
