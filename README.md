@@ -2,6 +2,7 @@
 ### *An E-Waste Collection And Recycling Tracker Web Application*
 
 **Software Requirements Specification**
+
 **SRS Version: V.01**
 
 ---
@@ -17,8 +18,6 @@
 | 23201464 | Abu Bakar Siddique |
 
 ---
-
-## 📄 Sprint 1
 
 ## 1. Introduction
 
