@@ -1,0 +1,40 @@
+# Node.js
+node_modules/
+dist/
+.env
+.env.local
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.atom/
+
+# Build artifacts
+build/
+coverage/
+
+# Client-specific (React)
+client/node_modules/
+client/dist/
+client/.env.local # if .env files are inside client directory
+
+# Server-specific (Node.js/Express)
+server/node_modules/
+server/dist/
+server/*.env # if .env files are inside server directory
+
+# MongoDB
+data/db/ # Local MongoDB data
