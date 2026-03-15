@@ -38,3 +38,4 @@ server/*.env # if .env files are inside server directory
 
 # MongoDB
 data/db/ # Local MongoDB data
+Feature_Details
