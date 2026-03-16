@@ -7,14 +7,16 @@ import {
     FaMapMarkerAlt, 
     FaCalendarAlt, 
     FaClock, 
-    FaListUl, 
     FaUser, 
     FaEnvelope,
     FaInfoCircle,
     FaArrowRight,
     FaPlus,
-    FaTrashAlt
+    FaTrashAlt,
+    FaCamera,
+    FaTimes
 } from 'react-icons/fa';
+import { imageUpload } from '../utils/index';
 
 const categories = [
     'Computer/Laptop',
@@ -32,10 +34,10 @@ const PickupRequest = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     
-    // Dynamic items state
-    const [items, setItems] = useState([{ category: '', quantity: 1 }]);
+    // Dynamic items state with image property
+    const [items, setItems] = useState([{ category: '', quantity: 1, image: null }]);
 
-    const addItem = () => setItems([...items, { category: '', quantity: 1 }]);
+    const addItem = () => setItems([...items, { category: '', quantity: 1, image: null }]);
     
     const removeItem = (index) => {
         if (items.length > 1) {
@@ -51,13 +53,23 @@ const PickupRequest = () => {
         setItems(newItems);
     };
 
+    const handleItemImageChange = (index, e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+                return toast.error("Only JPEG and PNG images are allowed.");
+            }
+            updateItem(index, 'image', file);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
         // Validation
-        const isInvalid = items.some(item => !item.category || item.quantity < 1);
+        const isInvalid = items.some(item => !item.category || item.quantity < 1 || !item.image);
         if (isInvalid) {
-            return toast.error("Please select a category and valid quantity for all items.");
+            return toast.error("Please provide category, quantity, and an image for all items.");
         }
 
         setLoading(true);
@@ -67,18 +79,28 @@ const PickupRequest = () => {
         const date = form.date.value;
         const time = form.time.value;
 
-        const pickupData = {
-            userName: user?.displayName || dbUser?.name,
-            userEmail: user?.email,
-            address,
-            preferredDate: date,
-            preferredTime: time,
-            items: items, // Structured list
-            status: 'pending',
-            createdAt: new Date()
-        };
-
         try {
+            // Upload images for each item
+            const itemsWithUrls = await Promise.all(items.map(async (item) => {
+                const imageUrl = await imageUpload(item.image);
+                return {
+                    category: item.category,
+                    quantity: item.quantity,
+                    image: imageUrl
+                };
+            }));
+
+            const pickupData = {
+                userName: user?.displayName || dbUser?.name,
+                userEmail: user?.email,
+                address,
+                preferredDate: date,
+                preferredTime: time,
+                items: itemsWithUrls, 
+                status: 'pending',
+                createdAt: new Date()
+            };
+
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/pickups`, pickupData);
             if (res.data.insertedId) {
                 toast.success('Pickup request submitted successfully!');
@@ -86,7 +108,7 @@ const PickupRequest = () => {
             }
         } catch (error) {
             console.error("Error submitting pickup request:", error);
-            toast.error('Failed to submit pickup request.');
+            toast.error(error.message || 'Failed to submit pickup request.');
         } finally {
             setLoading(false);
         }
@@ -172,44 +194,71 @@ const PickupRequest = () => {
                                     </div>
                                 </div>
 
-                                {/* 02. Items Selection (NEW STRUCTURED PART) */}
+                                {/* 02. Items Selection */}
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                                        <div className="h-[1px] w-6 bg-gray-300"></div> 02. Waste Type & Quantity
+                                        <div className="h-[1px] w-6 bg-gray-300"></div> 02. Waste Type, Quantity & Image
                                     </h3>
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {items.map((item, index) => (
-                                            <div key={index} className="flex flex-col md:flex-row gap-3 items-end bg-gray-50 p-4 rounded-xl border border-gray-100 relative group transition-all hover:border-green-200">
-                                                <div className="flex-1 w-full">
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Category</label>
-                                                    <select 
-                                                        value={item.category}
-                                                        onChange={(e) => updateItem(index, 'category', e.target.value)}
-                                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
-                                                        required
+                                            <div key={index} className="bg-gray-50 p-4 rounded-xl border border-gray-100 relative group transition-all hover:border-green-200 space-y-4">
+                                                <div className="flex flex-col md:flex-row gap-3 items-end">
+                                                    <div className="flex-1 w-full">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Category <span className="text-red-500">*</span></label>
+                                                        <select 
+                                                            value={item.category}
+                                                            onChange={(e) => updateItem(index, 'category', e.target.value)}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
+                                                            required
+                                                        >
+                                                            <option value="" disabled>Select Category</option>
+                                                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div className="w-full md:w-32">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Quantity <span className="text-red-500">*</span></label>
+                                                        <input 
+                                                            type="number" 
+                                                            min="1"
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => removeItem(index)}
+                                                        className="p-3.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                        title="Remove item"
                                                     >
-                                                        <option value="" disabled>Select Category</option>
-                                                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                                                    </select>
+                                                        <FaTrashAlt />
+                                                    </button>
                                                 </div>
-                                                <div className="w-full md:w-32">
-                                                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Quantity</label>
-                                                    <input 
-                                                        type="number" 
-                                                        min="1"
-                                                        value={item.quantity}
-                                                        onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
-                                                        required
-                                                    />
+                                                
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative w-20 h-20 bg-white border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center overflow-hidden shrink-0 group/img">
+                                                        {item.image ? (
+                                                            <>
+                                                                <img src={URL.createObjectURL(item.image)} alt="preview" className="w-full h-full object-cover" />
+                                                                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer">
+                                                                    <FaCamera className="text-white" />
+                                                                    <input type="file" className="hidden" onChange={(e) => handleItemImageChange(index, e)} accept="image/jpeg, image/png" />
+                                                                </label>
+                                                            </>
+                                                        ) : (
+                                                            <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-gray-400 hover:text-green-500 transition-colors">
+                                                                <FaCamera size={20} />
+                                                                <span className="text-[8px] font-bold uppercase mt-1">Add Image</span>
+                                                                <input type="file" className="hidden" onChange={(e) => handleItemImageChange(index, e)} accept="image/jpeg, image/png" required />
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400">
+                                                        <p className="font-bold uppercase text-gray-500">Item Image <span className="text-red-500">*</span></p>
+                                                        <p>Required: 1 photo (JPEG/PNG)</p>
+                                                    </div>
                                                 </div>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => removeItem(index)}
-                                                    className="p-3.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                >
-                                                    <FaTrashAlt />
-                                                </button>
                                             </div>
                                         ))}
                                         <button 
