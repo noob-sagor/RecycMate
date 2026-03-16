@@ -30,12 +30,15 @@ async function run() {
   try {
     const db = client.db("recycmateDB");
     const usersCollection = db.collection("users");
+    const pickupsCollection = db.collection("pickups");
 
     // Import Routes
     const userRoutes = require('./routes/user.route')(usersCollection);
+    const pickupRoutes = require('./routes/pickup.route')(pickupsCollection);
 
     // Use Routes
     app.use('/users', userRoutes);
+    app.use('/pickups', pickupRoutes);
 
     console.log("Connected to MongoDB!");
   } catch (error) {

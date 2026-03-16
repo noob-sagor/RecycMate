@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { imageUpload } from '../utils';
 
 const SignUp = () => {
     const { createUser, updateUserProfile, signInWithGoogle, logOut, setUser } = useContext(AuthContext);
@@ -14,22 +15,15 @@ const SignUp = () => {
         const image = e.target.files[0];
         if (!image) return;
 
-        const formData = new FormData();
-        formData.append("image", image);
-        
-        const imageUploadURL = `https://api.imgbb.com/1/upload?key=${
-          import.meta.env.VITE_imgbb_key
-        }`;
-
         try {
             setUploading(true);
-            const res = await axios.post(imageUploadURL, formData);
-            if (res.data.success) {
-                setProfilePic(res.data.data.url);
+            const imageUrl = await imageUpload(image);
+            if (imageUrl) {
+                setProfilePic(imageUrl);
                 toast.success('Image uploaded successfully!');
             }
         } catch (error) {
-            toast.error("Image upload failed. Please check your ImgBB API key.");
+            toast.error(error.message || "Image upload failed.");
             console.error(error);
         } finally {
             setUploading(false);

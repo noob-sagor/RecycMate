@@ -46,7 +46,7 @@ const Navbar = () => {
                     </div>
                     <ul
                         tabIndex={0}
-                        className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                        className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
                         {navLinks}
                     </ul>
                 </div>
@@ -66,7 +66,7 @@ const Navbar = () => {
                                     <img alt="User Avatar" src={user?.photoURL || "https://i.ibb.co/mJR9nxM/user.png"} />
                                 </div>
                             </div>
-                            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-100 rounded-box w-52">
                                 <li>
                                     <span className="justify-between font-bold">
                                         {user?.displayName || 'User'}

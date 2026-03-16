@@ -10,6 +10,7 @@ import UserDashboard from "../pages/Dashboard/User/UserDashboard";
 import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
 import PrivateRoute from "../routes/PrivateRoute";
+import PickupRequest from "../pages/PickupRequest";
 
 const router = createBrowserRouter([
     {
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
             {
                 path: "/signup",
                 element: <SignUp />,
+            },
+            {
+                path: "/pickup-request",
+                element: <PrivateRoute><PickupRequest /></PrivateRoute>,
             },
             {
                 path: "/dashboard",
