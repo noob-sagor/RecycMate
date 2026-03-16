@@ -11,7 +11,7 @@ const Banner = () => {
           alt="E-waste management" />
         <div className="text-center lg:text-left">
           <h1 className="text-5xl lg:text-7xl font-bold text-gray-800 leading-tight">
-            Manage Your E-Waste with <span className="text-green-600">RecycMatee</span>
+            Manage Your E-Waste with <span className="text-green-600">RecycMateee</span>
           </h1>
           <p className="py-6 text-lg lg:text-xl text-gray-600">
             Join the mission to create a greener planet. Schedule pickups for your old electronics, 
