@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { AuthContext } from "../../../providers/AuthProvider";
-import { FaEye, FaTruck, FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaEye, FaTruck, FaCalendarAlt, FaMapMarkerAlt, FaCheckCircle, FaExclamationCircle, FaTimesCircle } from 'react-icons/fa';
 
 const AllPickups = () => {
     const { dbUser } = useContext(AuthContext);
     const [pickups, setPickups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPickup, setSelectedPickup] = useState(null);
+    const [statusModal, setStatusModal] = useState({ isOpen: false, pickupId: null, newStatus: '', note: '' });
 
     const statuses = ['pending', 'assigned', 'in-progress', 'completed', 'cancelled'];
 
@@ -27,17 +28,26 @@ const AllPickups = () => {
         fetchAllPickups();
     }, []);
 
-    const handleStatusChange = async (pickupId, newStatus) => {
+    const initiateStatusChange = (pickupId, newStatus) => {
+        if (newStatus === 'approved' || newStatus === 'rejected') {
+            setStatusModal({ isOpen: true, pickupId, newStatus, note: '' });
+        } else {
+            handleStatusChange(pickupId, newStatus, '');
+        }
+    };
+
+    const handleStatusChange = async (pickupId, newStatus, adminNote = '') => {
         try {
             const response = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/${pickupId}/status`, { 
                 status: newStatus,
-                updatedBy: dbUser?.name || 'Admin'
+                updatedBy: dbUser?.name || 'Admin',
+                adminNote
             });
 
             if (response.data.modifiedCount > 0) {
                 toast.success(`Pickup status updated to ${newStatus}.`);
                 setPickups(pickups.map(pickup => 
-                    pickup._id === pickupId ? { ...pickup, status: newStatus } : pickup
+                    pickup._id === pickupId ? { ...pickup, status: newStatus, statusHistory: [...(pickup.statusHistory || []), { status: newStatus, timestamp: new Date(), updatedBy: dbUser?.name || 'Admin', note: adminNote }] } : pickup
                 ));
             } else {
                 toast.warn("Status not changed. It might already have this status.");
@@ -45,6 +55,8 @@ const AllPickups = () => {
         } catch (error) {
             toast.error("Failed to update status.");
             console.error("Error updating status:", error);
+        } finally {
+            setStatusModal({ isOpen: false, pickupId: null, newStatus: '', note: '' });
         }
     };
 
@@ -87,15 +99,33 @@ const AllPickups = () => {
                                         <select
                                             className="select select-bordered select-sm w-full max-w-[130px] capitalize text-xs"
                                             value={pickup.status || 'pending'}
-                                            onChange={(e) => handleStatusChange(pickup._id, e.target.value)}
+                                            onChange={(e) => initiateStatusChange(pickup._id, e.target.value)}
                                         >
                                             {statuses.map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
+                                        <div className="flex bg-gray-50 rounded-lg p-1">
+                                            <button 
+                                                onClick={() => initiateStatusChange(pickup._id, 'approved')}
+                                                className={`btn btn-sm btn-ghost hover:bg-green-100 hover:text-green-700 px-2`}
+                                                title="Approve"
+                                                disabled={pickup.status === 'completed' || pickup.status === 'cancelled'}
+                                            >
+                                                <FaCheckCircle className="text-green-500" />
+                                            </button>
+                                            <button 
+                                                onClick={() => initiateStatusChange(pickup._id, 'rejected')}
+                                                className={`btn btn-sm btn-ghost hover:bg-red-100 hover:text-red-700 px-2`}
+                                                title="Reject"
+                                                disabled={pickup.status === 'completed' || pickup.status === 'cancelled'}
+                                            >
+                                                <FaTimesCircle className="text-red-500" />
+                                            </button>
+                                        </div>
                                         <button 
                                             onClick={() => setSelectedPickup(pickup)}
-                                            className="btn btn-sm btn-circle btn-ghost text-green-600 hover:bg-green-600 hover:text-white transition-all border border-green-100"
+                                            className="btn btn-sm btn-circle btn-ghost text-blue-600 hover:bg-blue-600 hover:text-white transition-all border border-blue-100 ml-1"
                                             title="View Details"
                                         >
                                             <FaEye size={16} />
@@ -170,6 +200,12 @@ const AllPickups = () => {
                                                         <span className="text-xs text-gray-400 font-normal">
                                                             {new Date(history.timestamp).toLocaleString()} • by {history.updatedBy}
                                                         </span>
+                                                        {history.note && (
+                                                            <div className="mt-2 text-xs bg-white p-2 border border-gray-100 rounded-lg shadow-sm w-full font-medium text-gray-600">
+                                                                <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px] block mb-1">Admin Note:</span>
+                                                                {history.note}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </li>
                                             ))}
@@ -228,6 +264,49 @@ const AllPickups = () => {
                         </div>
                     </div>
                     <div className="modal-backdrop bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPickup(null)}></div>
+                </div>
+            )}
+            {/* Admin Note Modal */}
+            {statusModal.isOpen && (
+                <div className="modal modal-open">
+                    <div className="modal-box rounded-3xl p-8">
+                        <h3 className="font-bold text-xl mb-2 text-gray-800 flex items-center gap-2">
+                            {statusModal.newStatus === 'approved' ? (
+                                <><FaCheckCircle className="text-green-500" /> Approve Request</>
+                            ) : (
+                                <><FaExclamationCircle className="text-red-500" /> Reject Request</>
+                            )}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-6 font-medium">Please provide a reason or note for the user.</p>
+                        
+                        <div className="form-control mb-6">
+                            <label className="label">
+                                <span className="label-text font-bold text-xs uppercase tracking-wider text-gray-500">Admin Note / Reason</span>
+                            </label>
+                            <textarea
+                                className="textarea textarea-bordered h-24 rounded-xl focus:border-green-500 transition-colors"
+                                placeholder={`E.g., ${statusModal.newStatus === 'approved' ? 'Approved for pickup on Friday.' : 'Rejected due to items not being accepted.'}`}
+                                value={statusModal.note}
+                                onChange={(e) => setStatusModal({ ...statusModal, note: e.target.value })}
+                            ></textarea>
+                        </div>
+                        
+                        <div className="modal-action flex gap-3 m-0">
+                            <button 
+                                onClick={() => setStatusModal({ isOpen: false, pickupId: null, newStatus: '', note: '' })}
+                                className="btn btn-ghost rounded-xl font-bold"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={() => handleStatusChange(statusModal.pickupId, statusModal.newStatus, statusModal.note)}
+                                className={`btn border-none text-white rounded-xl shadow-lg px-8 ${statusModal.newStatus === 'approved' ? 'bg-green-600 hover:bg-green-700 shadow-green-200' : 'bg-red-500 hover:bg-red-600 shadow-red-200'}`}
+                            >
+                                Confirm {statusModal.newStatus}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop bg-black/40 backdrop-blur-sm" onClick={() => setStatusModal({ isOpen: false, pickupId: null, newStatus: '', note: '' })}></div>
                 </div>
             )}
         </div>

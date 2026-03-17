@@ -40,10 +40,10 @@ const getAllPickups = async (pickupsCollection, req, res) => {
     }
 };
 
-const updatePickupStatus = async (pickupsCollection, req, res) => {
+    const updatePickupStatus = async (pickupsCollection, req, res) => {
     try {
         const id = req.params.id;
-        const { status, updatedBy } = req.body;
+        const { status, updatedBy, adminNote } = req.body;
         
         if (!status) {
             return res.status(400).send({ message: "Status is required" });
@@ -56,7 +56,8 @@ const updatePickupStatus = async (pickupsCollection, req, res) => {
                 statusHistory: {
                     status,
                     timestamp: new Date(),
-                    updatedBy: updatedBy || 'System'
+                    updatedBy: updatedBy || 'System',
+                    ...(adminNote && { note: adminNote })
                 }
             }
         };
