@@ -196,6 +196,29 @@ const UserDashboard = () => {
                                 </div>
                             </div>
 
+                            {/* Status Timeline */}
+                            {selectedPickup.statusHistory && selectedPickup.statusHistory.length > 0 && (
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                                        <div className="h-[1px] w-8 bg-gray-200"></div> Request Status Timeline
+                                    </h4>
+                                    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+                                        <ul className="steps steps-vertical w-full">
+                                            {selectedPickup.statusHistory.map((history, idx) => (
+                                                <li key={idx} className={`step ${idx === selectedPickup.statusHistory.length - 1 ? 'step-success text-green-600 font-bold' : 'step-neutral text-gray-500'}`}>
+                                                    <div className="flex flex-col items-start text-left w-full ml-4 py-2">
+                                                        <span className="capitalize text-sm">{history.status}</span>
+                                                        <span className="text-xs text-gray-400 font-normal">
+                                                            {new Date(history.timestamp).toLocaleString()} • by {history.updatedBy}
+                                                        </span>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Items & Images */}
                             <div className="space-y-4">
                                 <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">

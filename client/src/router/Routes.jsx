@@ -6,6 +6,7 @@ import SignUp from "../pages/SignUp";
 import DashboardLayout from "../layout/DashboardLayout/DashboardLayout";
 import DashboardHome from "../pages/Dashboard/DashboardHome";
 import ManageUsers from "../pages/Dashboard/Admin/ManageUsers";
+import AllPickups from "../pages/Dashboard/Admin/AllPickups";
 import UserDashboard from "../pages/Dashboard/User/UserDashboard";
 import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
                     {
                         path: "manage-users",
                         element: <ManageUsers />,
+                    },
+                    {
+                        path: "all-pickups",
+                        element: <AllPickups />,
                     },
                     {
                         path: "user-dashboard",

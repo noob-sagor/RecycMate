@@ -56,7 +56,8 @@ const Login = () => {
     return (
         <div className="hero min-h-screen bg-base-200">
             <div className="hero-content flex-col">
-                <div className="text-center lg:text-left">
+                <div className="text-center lg:text-left flex flex-col items-center lg:items-start">
+                    <img src="/logo.png" alt="RecycMate" className="w-32 h-32 mb-2 object-contain drop-shadow-md scale-[1.2]" />
                     <h1 className="text-5xl font-bold mb-6">Login to RecycMate</h1>
                 </div>
                 <div className="card shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
