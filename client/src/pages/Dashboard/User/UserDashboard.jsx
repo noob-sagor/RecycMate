@@ -211,6 +211,12 @@ const UserDashboard = () => {
                                                         <span className="text-xs text-gray-400 font-normal">
                                                             {new Date(history.timestamp).toLocaleString()} • by {history.updatedBy}
                                                         </span>
+                                                        {history.note && (
+                                                            <div className="mt-2 text-xs bg-white p-2 border border-gray-100 rounded-lg shadow-sm w-full font-medium text-gray-600">
+                                                                <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px] block mb-1">Admin Note:</span>
+                                                                {history.note}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </li>
                                             ))}
