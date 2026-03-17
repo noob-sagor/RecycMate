@@ -35,8 +35,11 @@ const DashboardLayout = () => {
                             <li><NavLink to="/dashboard/all-pickups" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaTruck /> Manage Pickups
                             </NavLink></li>
+                            <li><NavLink to="/dashboard/pickup-history" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaClipboardList /> Pickup History
+                            </NavLink></li>
                             <li><NavLink to="/dashboard/reports" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
-                                <FaClipboardList /> Impact Reports
+                                <FaChartLine /> Impact Reports
                             </NavLink></li>
                         </>
                     )}

@@ -17,10 +17,14 @@ const AllPickups = () => {
         const fetchAllPickups = async () => {
             try {
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/pickups/all`);
-                setPickups(res.data);
+                // Filter only active statuses: pending, assigned, in-progress
+                const activePickups = res.data.filter(p => 
+                    ['pending', 'assigned', 'in-progress'].includes(p.status)
+                );
+                setPickups(activePickups);
                 setLoading(false);
             } catch (error) {
-                toast.error("Failed to fetch pickups.");
+                toast.error("Failed to fetch active pickups.");
                 console.error("Error fetching pickups:", error);
                 setLoading(false);
             }
@@ -46,58 +50,92 @@ const AllPickups = () => {
 
             if (response.data.modifiedCount > 0) {
                 toast.success(`Pickup status updated to ${newStatus}.`);
-                setPickups(pickups.map(pickup => 
-                    pickup._id === pickupId ? { ...pickup, status: newStatus, statusHistory: [...(pickup.statusHistory || []), { status: newStatus, timestamp: new Date(), updatedBy: dbUser?.name || 'Admin', note: adminNote }] } : pickup
-                ));
+                // Remove from pending list if it's approved or rejected (or other final statuses)
+                if (['approved', 'rejected', 'completed', 'cancelled'].includes(newStatus)) {
+                    setPickups(pickups.filter(pickup => pickup._id !== pickupId));
+                } else {
+                    setPickups(pickups.map(pickup => 
+                        pickup._id === pickupId ? { ...pickup, status: newStatus, statusHistory: [...(pickup.statusHistory || []), { status: newStatus, timestamp: new Date(), updatedBy: dbUser?.name || 'Admin', note: adminNote }] } : pickup
+                    ));
+                }
             } else {
-                toast.warn("Status not changed. It might already have this status.");
+                toast.warn("Status not changed.");
             }
         } catch (error) {
             toast.error("Failed to update status.");
-            console.error("Error updating status:", error);
         } finally {
             setStatusModal({ isOpen: false, pickupId: null, newStatus: '', note: '' });
         }
     };
 
     if (loading) {
-        return <div className="flex justify-center items-center h-40">Loading pickups...</div>;
+        return (
+            <div className="flex flex-col justify-center items-center h-64 gap-4">
+                <span className="loading loading-ring loading-lg text-green-600"></span>
+                <p className="text-gray-500 font-medium animate-pulse">Loading active requests...</p>
+            </div>
+        );
     }
 
     return (
-        <div>
-            <h1 className="text-3xl font-bold text-green-700 mb-8">Manage All Pickups</h1>
-            <div className="overflow-x-auto bg-white rounded-xl shadow-sm border p-6">
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800">Active Requests</h1>
+                    <p className="text-gray-500 text-sm mt-1">Manage and track ongoing pickup operations.</p>
+                </div>
+                <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-xl border border-green-100">
+                    <span className="text-green-700 font-bold">{pickups.length}</span>
+                    <span className="text-green-600/70 text-xs font-bold uppercase tracking-wider">Pending Actions</span>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100 p-2">
                 <table className="table-auto w-full">
                     <thead>
-                        <tr className="bg-green-100">
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Info</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <tr className="bg-gray-50/50">
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">User Profile</th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pickup Point</th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Schedule</th>
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Action Center</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-gray-50">
                         {pickups.map(pickup => (
-                            <tr key={pickup._id} className="hover:bg-green-50 border-b border-gray-100 last:border-0">
-                                <td className="px-4 py-4">
-                                    <div className="text-sm font-bold text-gray-900">{pickup.userName}</div>
-                                    <div className="text-xs text-gray-500">{pickup.userEmail}</div>
-                                    <div className="text-xs text-green-600 font-medium mt-1">
-                                        {pickup.items?.length || 0} items
+                            <tr key={pickup._id} className="hover:bg-green-50/30 transition-colors group">
+                                <td className="px-6 py-5">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold shrink-0">
+                                            {pickup.userName?.[0] || 'U'}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-gray-900 leading-tight">{pickup.userName}</div>
+                                            <div className="text-[11px] text-gray-400">{pickup.userEmail}</div>
+                                            <div className="mt-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full w-fit">
+                                                {pickup.items?.length || 0} items
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700 max-w-[200px] truncate" title={pickup.address}>
-                                    {pickup.address}
+                                <td className="px-6 py-5">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 max-w-[240px]">
+                                        <FaMapMarkerAlt className="text-gray-300 shrink-0" size={12} />
+                                        <span className="truncate" title={pickup.address}>{pickup.address}</span>
+                                    </div>
                                 </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    <div>{pickup.preferredDate}</div>
-                                    <div className="text-xs text-gray-500">at {pickup.preferredTime}</div>
+                                <td className="px-6 py-5">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                            <FaCalendarAlt className="text-green-500" size={12} />
+                                            {pickup.preferredDate}
+                                        </div>
+                                        <div className="text-[11px] text-gray-400 font-medium ml-5">at {pickup.preferredTime}</div>
+                                    </div>
                                 </td>
-                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div className="flex items-center gap-2">
+                                <td className="px-6 py-5">
+                                    <div className="flex items-center gap-3">
                                         <select
-                                            className="select select-bordered select-sm w-full max-w-[130px] capitalize text-xs"
+                                            className="select select-bordered select-sm h-9 rounded-lg border-gray-200 focus:border-green-500 text-xs font-bold capitalize bg-gray-50/50"
                                             value={pickup.status || 'pending'}
                                             onChange={(e) => initiateStatusChange(pickup._id, e.target.value)}
                                         >
@@ -105,28 +143,29 @@ const AllPickups = () => {
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
-                                        <div className="flex bg-gray-50 rounded-lg p-1">
+                                        
+                                        <div className="flex bg-white border border-gray-100 rounded-xl p-1 shadow-sm">
                                             <button 
                                                 onClick={() => initiateStatusChange(pickup._id, 'approved')}
-                                                className={`btn btn-sm btn-ghost hover:bg-green-100 hover:text-green-700 px-2`}
-                                                title="Approve"
-                                                disabled={pickup.status === 'completed' || pickup.status === 'cancelled'}
+                                                className="btn btn-sm btn-ghost hover:bg-green-50 hover:text-green-700 w-9 h-9 p-0 rounded-lg group/btn"
+                                                title="Approve Request"
                                             >
-                                                <FaCheckCircle className="text-green-500" />
+                                                <FaCheckCircle className="text-gray-300 group-hover/btn:text-green-500 transition-colors" size={16} />
                                             </button>
+                                            <div className="w-[1px] bg-gray-50 my-1 mx-0.5"></div>
                                             <button 
                                                 onClick={() => initiateStatusChange(pickup._id, 'rejected')}
-                                                className={`btn btn-sm btn-ghost hover:bg-red-100 hover:text-red-700 px-2`}
-                                                title="Reject"
-                                                disabled={pickup.status === 'completed' || pickup.status === 'cancelled'}
+                                                className="btn btn-sm btn-ghost hover:bg-red-50 hover:text-red-700 w-9 h-9 p-0 rounded-lg group/btn"
+                                                title="Reject Request"
                                             >
-                                                <FaTimesCircle className="text-red-500" />
+                                                <FaTimesCircle className="text-gray-300 group-hover/btn:text-red-500 transition-colors" size={16} />
                                             </button>
                                         </div>
+
                                         <button 
                                             onClick={() => setSelectedPickup(pickup)}
-                                            className="btn btn-sm btn-circle btn-ghost text-blue-600 hover:bg-blue-600 hover:text-white transition-all border border-blue-100 ml-1"
-                                            title="View Details"
+                                            className="btn btn-sm btn-circle btn-ghost text-blue-500 hover:bg-blue-50 transition-all opacity-0 group-hover:opacity-100"
+                                            title="View Analysis"
                                         >
                                             <FaEye size={16} />
                                         </button>
@@ -136,8 +175,11 @@ const AllPickups = () => {
                         ))}
                         {pickups.length === 0 && (
                             <tr>
-                                <td colSpan="4" className="text-center py-8 text-gray-500">
-                                    No pickups found.
+                                <td colSpan="4" className="text-center py-20">
+                                    <div className="flex flex-col items-center gap-3 text-gray-300">
+                                        <FaTruck size={48} className="opacity-20" />
+                                        <p className="text-sm font-bold uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-full">No active requests found</p>
+                                    </div>
                                 </td>
                             </tr>
                         )}
