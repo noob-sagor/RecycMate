@@ -20,19 +20,7 @@ const DashboardLayout = () => {
         <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
             {/* Sidebar */}
             <div className="w-full lg:w-64 bg-green-700 text-white p-6 shadow-xl">
-                <div className="flex items-center gap-3 mb-10">
-                    <div className="avatar">
-                        <div className="w-12 rounded-full border-2 border-white">
-                            <img src={dbUser?.photo || "https://i.ibb.co/mJR9nxM/user.png"} alt="User" />
-                        </div>
-                    </div>
-                    <div>
-                        <h2 className="font-bold text-lg leading-tight">{dbUser?.name}</h2>
-                        <p className="text-xs text-green-200 capitalize">{dbUser?.role}</p>
-                    </div>
-                </div>
-
-                <ul className="menu p-0 space-y-2">
+                <ul className="menu p-0 space-y-2 mt-4">
                     {/* Common for all users */}
                     <li><NavLink to="/dashboard" end className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                         <FaChartLine /> Dashboard Home
@@ -43,6 +31,9 @@ const DashboardLayout = () => {
                         <>
                             <li><NavLink to="/dashboard/manage-users" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaUsers /> Manage Users
+                            </NavLink></li>
+                            <li><NavLink to="/dashboard/all-pickups" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaTruck /> Manage Pickups
                             </NavLink></li>
                             <li><NavLink to="/dashboard/reports" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaClipboardList /> Impact Reports

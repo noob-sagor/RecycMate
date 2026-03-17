@@ -33,6 +33,7 @@ const PickupRequest = () => {
     const { user, dbUser } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [warningModal, setWarningModal] = useState({ isOpen: false, message: '' });
     
     // Dynamic items state with image property
     const [items, setItems] = useState([{ category: '', quantity: 1, image: null }]);
@@ -66,18 +67,42 @@ const PickupRequest = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Validation
-        const isInvalid = items.some(item => !item.category || item.quantity < 1 || !item.image);
-        if (isInvalid) {
-            return toast.error("Please provide category, quantity, and an image for all items.");
-        }
-
-        setLoading(true);
-
         const form = e.target;
         const address = form.address.value;
         const date = form.date.value;
         const time = form.time.value;
+
+        // Validation checks mapped to the custom dialog
+        const missingErrors = [];
+
+        items.forEach((item, idx) => {
+            const itemNumber = items.length > 1 ? ` (Item #${idx + 1})` : '';
+            if (!item.category) missingErrors.push(`Category is missing${itemNumber}`);
+            if (item.quantity < 1) missingErrors.push(`Quantity must be at least 1${itemNumber}`);
+            if (!item.image) missingErrors.push(`Item Image is missing${itemNumber}`);
+        });
+
+        if (!address) {
+            missingErrors.push("Detailed Location Address");
+        }
+
+        if (!date) {
+            missingErrors.push("Preferred Pickup Date");
+        }
+
+        if (!time) {
+            missingErrors.push("Preferred Pickup Time");
+        }
+
+        if (missingErrors.length > 0) {
+            setWarningModal({ 
+                isOpen: true, 
+                message: missingErrors 
+            });
+            return;
+        }
+
+        setLoading(true);
 
         try {
             // Upload images for each item
@@ -209,7 +234,6 @@ const PickupRequest = () => {
                                                             value={item.category}
                                                             onChange={(e) => updateItem(index, 'category', e.target.value)}
                                                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
-                                                            required
                                                         >
                                                             <option value="" disabled>Select Category</option>
                                                             {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -223,7 +247,6 @@ const PickupRequest = () => {
                                                             value={item.quantity}
                                                             onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
                                                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all outline-none"
-                                                            required
                                                         />
                                                     </div>
                                                     <button 
@@ -250,7 +273,7 @@ const PickupRequest = () => {
                                                             <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer text-gray-400 hover:text-green-500 transition-colors">
                                                                 <FaCamera size={20} />
                                                                 <span className="text-[8px] font-bold uppercase mt-1">Add Image</span>
-                                                                <input type="file" className="hidden" onChange={(e) => handleItemImageChange(index, e)} accept="image/jpeg, image/png" required />
+                                                                <input type="file" className="hidden" onChange={(e) => handleItemImageChange(index, e)} accept="image/jpeg, image/png" />
                                                             </label>
                                                         )}
                                                     </div>
@@ -285,7 +308,6 @@ const PickupRequest = () => {
                                                     name="address" 
                                                     className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all min-h-[100px]" 
                                                     placeholder="Street, Building, Flat No..." 
-                                                    required
                                                 ></textarea>
                                             </div>
                                         </div>
@@ -298,7 +320,6 @@ const PickupRequest = () => {
                                                         name="date" 
                                                         type="date" 
                                                         className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" 
-                                                        required 
                                                     />
                                                 </div>
                                             </div>
@@ -310,7 +331,6 @@ const PickupRequest = () => {
                                                         name="time" 
                                                         type="time" 
                                                         className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" 
-                                                        required 
                                                     />
                                                 </div>
                                             </div>
@@ -332,6 +352,45 @@ const PickupRequest = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Warning Modal */}
+            {warningModal.isOpen && (
+                <div className="modal modal-open">
+                    <div className="modal-box bg-white rounded-3xl overflow-hidden p-0 max-w-sm w-full mx-auto shadow-2xl">
+                        <div className="p-8 text-center bg-white relative">
+                            <button 
+                                onClick={() => setWarningModal({ isOpen: false, message: '' })}
+                                className="btn btn-sm btn-circle absolute right-4 top-4 bg-gray-100 border-none text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-red-50/50">
+                                <FaInfoCircle className="text-4xl text-red-500" />
+                            </div>
+                            <h3 className="text-2xl font-extrabold text-gray-900 mb-3 tracking-tight">Wait a sec!</h3>
+                            <div className="text-gray-500 text-sm font-medium leading-relaxed px-4 text-left">
+                                <p className="mb-2 text-center">Please provide the following missing information:</p>
+                                <ul className="list-disc pl-5 space-y-1 text-red-500">
+                                    {(Array.isArray(warningModal.message) ? warningModal.message : [warningModal.message]).map((msg, idx) => (
+                                        <li key={idx}>
+                                            <span className="text-gray-600">{msg}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                        <div className="bg-gray-50/50 p-6 border-t border-gray-100 flex justify-center">
+                            <button 
+                                onClick={() => setWarningModal({ isOpen: false, message: '' })} 
+                                className="btn bg-red-500 hover:bg-red-600 border-none text-white w-full rounded-xl shadow-lg shadow-red-500/30 normal-case text-sm font-bold tracking-wide"
+                            >
+                                Got it, let me fix
+                            </button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop bg-black/40 backdrop-blur-sm" onClick={() => setWarningModal({ isOpen: false, message: '' })}></div>
+                </div>
+            )}
         </div>
     );
 };
