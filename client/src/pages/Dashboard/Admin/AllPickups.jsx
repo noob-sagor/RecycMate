@@ -42,10 +42,10 @@ const AllPickups = () => {
 
     const handleStatusChange = async (pickupId, newStatus, adminNote = '') => {
         try {
-            const response = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/${pickupId}/status`, { 
+            const response = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/status/${pickupId}`, { 
                 status: newStatus,
                 updatedBy: dbUser?.name || 'Admin',
-                adminNote
+                note: adminNote
             });
 
             if (response.data.modifiedCount > 0) {
@@ -189,9 +189,9 @@ const AllPickups = () => {
 
             {/* Details Modal */}
             {selectedPickup && (
-                <div className="modal modal-open overflow-y-auto">
-                    <div className="modal-box max-w-3xl p-0 rounded-3xl overflow-hidden shadow-2xl bg-white">
-                        <div className="bg-green-600 p-8 text-white relative">
+                <div className="modal modal-open z-[50]">
+                    <div className="modal-box max-w-3xl p-0 rounded-3xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto relative">
+                        <div className="bg-green-600 p-8 text-white sticky top-0 z-20">
                             <button 
                                 onClick={() => setSelectedPickup(null)}
                                 className="btn btn-sm btn-circle absolute right-6 top-6 bg-green-500 border-none text-white hover:bg-green-700"
@@ -310,8 +310,8 @@ const AllPickups = () => {
             )}
             {/* Admin Note Modal */}
             {statusModal.isOpen && (
-                <div className="modal modal-open">
-                    <div className="modal-box rounded-3xl p-8">
+                <div className="modal modal-open z-[60]">
+                    <div className="modal-box rounded-3xl p-8 bg-white max-h-[90vh] overflow-y-auto relative">
                         <h3 className="font-bold text-xl mb-2 text-gray-800 flex items-center gap-2">
                             {statusModal.newStatus === 'approved' ? (
                                 <><FaCheckCircle className="text-green-500" /> Approve Request</>

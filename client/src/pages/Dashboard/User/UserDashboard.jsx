@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { FaTruck, FaClock, FaCheckCircle, FaExclamationCircle, FaEye, FaMapMarkerAlt, FaCalendarAlt, FaHistory } from 'react-icons/fa';
+import { FaTruck, FaClock, FaCheckCircle, FaExclamationCircle, FaEye, FaMapMarkerAlt, FaCalendarAlt, FaHistory, FaBan, FaCheckDouble } from 'react-icons/fa';
 import useAuth from '../../../hooks/useAuth';
 import axios from 'axios';
+import toast from 'react-hot-toast';
+import StatusTracker from '../../../components/StatusTracker';
 
 const UserDashboard = () => {
     const { user } = useAuth();
     const [pickups, setPickups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPickup, setSelectedPickup] = useState(null);
+    const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
+    const [isRescheduling, setIsRescheduling] = useState(false);
 
     useEffect(() => {
         const fetchMyPickups = async () => {
@@ -23,6 +27,58 @@ const UserDashboard = () => {
         };
         fetchMyPickups();
     }, [user?.email]);
+
+    const handleReschedule = async () => {
+        if (!rescheduleData.date || !rescheduleData.time) {
+            return toast.error("Please select both date and time.");
+        }
+        try {
+            const res = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/reschedule/${selectedPickup._id}`, {
+                preferredDate: rescheduleData.date,
+                preferredTime: rescheduleData.time,
+                updatedBy: user.email
+            });
+            if (res.data.modifiedCount > 0) {
+                toast.success("Pickup rescheduled successfully!");
+                const updatedPickup = { 
+                    ...selectedPickup, 
+                    preferredDate: rescheduleData.date, 
+                    preferredTime: rescheduleData.time,
+                    status: 'pending',
+                    statusHistory: [
+                        ...(selectedPickup.statusHistory || []),
+                        {
+                            status: 'rescheduled',
+                            timestamp: new Date(),
+                            updatedBy: user.email,
+                            note: `Rescheduled to ${rescheduleData.date} at ${rescheduleData.time}`
+                        }
+                    ]
+                };
+                setPickups(pickups.map(p => p._id === selectedPickup._id ? updatedPickup : p));
+                setIsRescheduling(false);
+                setSelectedPickup(null);
+            }
+        } catch (error) {
+            toast.error("Failed to reschedule.");
+        }
+    };
+
+    const handleCancel = async (id) => {
+        if (!window.confirm("Are you sure you want to cancel this pickup request?")) return;
+        try {
+            const res = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/cancel/${id}`, {
+                updatedBy: user.email
+            });
+            if (res.data.modifiedCount > 0) {
+                toast.success("Pickup cancelled.");
+                setPickups(pickups.map(p => p._id === id ? { ...p, status: 'cancelled' } : p));
+                setSelectedPickup(null);
+            }
+        } catch (error) {
+            toast.error("Failed to cancel.");
+        }
+    };
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -157,9 +213,9 @@ const UserDashboard = () => {
 
             {/* Details Modal */}
             {selectedPickup && (
-                <div className="modal modal-open overflow-y-auto">
-                    <div className="modal-box max-w-3xl p-0 rounded-3xl overflow-hidden shadow-2xl bg-white">
-                        <div className="bg-green-600 p-8 text-white relative">
+                <div className="modal modal-open z-[50]">
+                    <div className="modal-box max-w-3xl p-0 rounded-3xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto relative">
+                        <div className="bg-green-600 p-8 text-white sticky top-0 z-20">
                             <button 
                                 onClick={() => setSelectedPickup(null)}
                                 className="btn btn-sm btn-circle absolute right-6 top-6 bg-green-500 border-none text-white hover:bg-green-700"
@@ -175,6 +231,14 @@ const UserDashboard = () => {
                         </div>
                         
                         <div className="p-8 space-y-8">
+                            {/* Real-time Status Tracker */}
+                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-8 flex items-center gap-2">
+                                    <div className="h-[1px] w-8 bg-gray-200"></div> Real-time Status Tracker
+                                </h4>
+                                <StatusTracker currentStatus={selectedPickup.status} statusHistory={selectedPickup.statusHistory} />
+                            </div>
+
                             {/* Summary Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
@@ -196,31 +260,54 @@ const UserDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Status Timeline */}
-                            {selectedPickup.statusHistory && selectedPickup.statusHistory.length > 0 && (
-                                <div className="space-y-4">
-                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                                        <div className="h-[1px] w-8 bg-gray-200"></div> Request Status Timeline
+                            {/* Action Buttons */}
+                            {selectedPickup.status === 'pending' && (
+                                <div className="flex flex-wrap gap-4 pt-2">
+                                    <button 
+                                        onClick={() => setIsRescheduling(true)}
+                                        className="btn btn-outline btn-success rounded-xl flex-1 gap-2 border-2"
+                                    >
+                                        <FaCalendarAlt /> Reschedule
+                                    </button>
+                                    <button 
+                                        onClick={() => handleCancel(selectedPickup._id)}
+                                        className="btn btn-outline btn-error rounded-xl flex-1 gap-2 border-2"
+                                    >
+                                        <FaBan /> Cancel Request
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Collector Details (Checklist/Inspection) if available */}
+                            {(selectedPickup.checklist || selectedPickup.inspection) && (
+                                <div className="space-y-6 bg-blue-50/30 p-6 rounded-2xl border border-blue-100">
+                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-400 flex items-center gap-2">
+                                        <div className="h-[1px] w-8 bg-blue-200"></div> Collector Updates
                                     </h4>
-                                    <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-                                        <ul className="steps steps-vertical w-full">
-                                            {selectedPickup.statusHistory.map((history, idx) => (
-                                                <li key={idx} className={`step ${idx === selectedPickup.statusHistory.length - 1 ? 'step-success text-green-600 font-bold' : 'step-neutral text-gray-500'}`}>
-                                                    <div className="flex flex-col items-start text-left w-full ml-4 py-2">
-                                                        <span className="capitalize text-sm">{history.status}</span>
-                                                        <span className="text-xs text-gray-400 font-normal">
-                                                            {new Date(history.timestamp).toLocaleString()} • by {history.updatedBy}
-                                                        </span>
-                                                        {history.note && (
-                                                            <div className="mt-2 text-xs bg-white p-2 border border-gray-100 rounded-lg shadow-sm w-full font-medium text-gray-600">
-                                                                <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px] block mb-1">Admin Note:</span>
-                                                                {history.note}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {selectedPickup.checklist && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                    <FaCheckCircle className="text-green-500" /> Pickup Checklist
+                                                </p>
+                                                <ul className="text-xs text-gray-500 space-y-1 ml-6 list-disc">
+                                                    {selectedPickup.checklist.items?.map((item, i) => (
+                                                        <li key={i}>{item}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                        {selectedPickup.inspection && (
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                    <FaCheckDouble className="text-blue-500" /> Inspection Report
+                                                </p>
+                                                <div className="ml-6 space-y-1">
+                                                    <p className="text-xs font-bold text-gray-600">Condition: <span className="text-blue-600">{selectedPickup.inspection.condition}</span></p>
+                                                    <p className="text-xs text-gray-500 italic">"{selectedPickup.inspection.notes}"</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -268,6 +355,51 @@ const UserDashboard = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Detailed Activity Log */}
+                            {selectedPickup.statusHistory && selectedPickup.statusHistory.length > 0 && (
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
+                                        <div className="h-[1px] w-8 bg-gray-200"></div> Detailed Activity Log
+                                    </h4>
+                                    <div className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm">
+                                        <ul className="divide-y divide-gray-50">
+                                            {[...selectedPickup.statusHistory].reverse().map((history, idx) => (
+                                                <li key={idx} className="p-4 flex gap-4 hover:bg-gray-50 transition-colors">
+                                                    <div className="flex flex-col items-center">
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                                            idx === 0 ? 'bg-green-100 text-green-600 shadow-sm' : 'bg-gray-100 text-gray-400'
+                                                        }`}>
+                                                            {idx === 0 ? <FaCheckCircle size={14} /> : <FaHistory size={12} />}
+                                                        </div>
+                                                        {idx !== selectedPickup.statusHistory.length - 1 && (
+                                                            <div className="w-[2px] h-full bg-gray-100 mt-2"></div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex justify-between items-start gap-4">
+                                                            <p className={`text-sm font-bold capitalize ${idx === 0 ? 'text-green-700' : 'text-gray-700'}`}>
+                                                                {history.status}
+                                                            </p>
+                                                            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                                {new Date(history.timestamp).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1 font-medium italic">
+                                                            <span className="opacity-50">by</span> {history.updatedBy}
+                                                        </p>
+                                                        {history.note && (
+                                                            <div className="mt-2 text-[11px] bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-gray-600 font-medium">
+                                                                {history.note}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         
                         <div className="modal-action p-6 bg-gray-50/50 border-t border-gray-100">
@@ -275,6 +407,47 @@ const UserDashboard = () => {
                         </div>
                     </div>
                     <div className="modal-backdrop bg-black/60 backdrop-blur-sm" onClick={() => setSelectedPickup(null)}></div>
+                </div>
+            )}
+            {/* Reschedule Modal */}
+            {isRescheduling && (
+                <div className="modal modal-open z-[100]">
+                    <div className="modal-box rounded-3xl p-8 bg-white shadow-2xl relative z-[110]">
+                        <h3 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <FaCalendarAlt className="text-green-600" /> Reschedule Pickup
+                        </h3>
+                        <div className="space-y-6">
+                            <div className="relative group">
+                                <label className="text-xs font-bold text-gray-500 ml-1 mb-1 block uppercase">Preferred Date</label>
+                                <div className="relative">
+                                    <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-500" />
+                                    <input 
+                                        type="date" 
+                                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" 
+                                        value={rescheduleData.date}
+                                        onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="relative group">
+                                <label className="text-xs font-bold text-gray-500 ml-1 mb-1 block uppercase">Preferred Time</label>
+                                <div className="relative">
+                                    <FaClock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-green-500" />
+                                    <input 
+                                        type="time" 
+                                        className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" 
+                                        value={rescheduleData.time}
+                                        onChange={(e) => setRescheduleData({ ...rescheduleData, time: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-action mt-8 gap-4">
+                            <button onClick={() => setIsRescheduling(false)} className="btn btn-ghost rounded-xl px-8">Cancel</button>
+                            <button onClick={handleReschedule} className="btn btn-success text-white rounded-xl px-8 shadow-lg shadow-green-200">Confirm</button>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop bg-black/40 backdrop-blur-sm" onClick={() => setIsRescheduling(false)}></div>
                 </div>
             )}
         </div>

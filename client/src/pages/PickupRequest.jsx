@@ -355,8 +355,8 @@ const PickupRequest = () => {
 
             {/* Warning Modal */}
             {warningModal.isOpen && (
-                <div className="modal modal-open">
-                    <div className="modal-box bg-white rounded-3xl overflow-hidden p-0 max-w-sm w-full mx-auto shadow-2xl">
+                <div className="modal modal-open z-[100]">
+                    <div className="modal-box bg-white rounded-3xl p-0 max-w-sm w-full mx-auto shadow-2xl max-h-[90vh] overflow-y-auto relative">
                         <div className="p-8 text-center bg-white relative">
                             <button 
                                 onClick={() => setWarningModal({ isOpen: false, message: '' })}

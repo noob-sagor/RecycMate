@@ -40,10 +40,10 @@ const getAllPickups = async (pickupsCollection, req, res) => {
     }
 };
 
-    const updatePickupStatus = async (pickupsCollection, req, res) => {
+const updatePickupStatus = async (pickupsCollection, req, res) => {
     try {
         const id = req.params.id;
-        const { status, updatedBy, adminNote } = req.body;
+        const { status, updatedBy, note } = req.body;
         
         if (!status) {
             return res.status(400).send({ message: "Status is required" });
@@ -57,15 +57,12 @@ const getAllPickups = async (pickupsCollection, req, res) => {
                     status,
                     timestamp: new Date(),
                     updatedBy: updatedBy || 'System',
-                    ...(adminNote && { note: adminNote })
+                    ...(note && { note })
                 }
             }
         };
 
         const result = await pickupsCollection.updateOne(filter, updateDoc);
-        if (result.matchedCount === 0) {
-            return res.status(404).send({ message: "Pickup not found" });
-        }
         res.send(result);
     } catch (error) {
         console.error("Error updating pickup status:", error);
@@ -73,9 +70,108 @@ const getAllPickups = async (pickupsCollection, req, res) => {
     }
 };
 
+const reschedulePickup = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { preferredDate, preferredTime, updatedBy } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: { preferredDate, preferredTime, status: 'pending' },
+            $push: {
+                statusHistory: {
+                    status: 'rescheduled',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'User',
+                    note: `Rescheduled to ${preferredDate} at ${preferredTime}`
+                }
+            }
+        };
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error rescheduling pickup:", error);
+        res.status(500).send({ message: "Failed to reschedule" });
+    }
+};
+
+const cancelPickup = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { updatedBy } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: { status: 'cancelled' },
+            $push: {
+                statusHistory: {
+                    status: 'cancelled',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'User'
+                }
+            }
+        };
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error cancelling pickup:", error);
+        res.status(500).send({ message: "Failed to cancel" });
+    }
+};
+
+const submitChecklist = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { checklist, updatedBy } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: { checklist: { ...checklist, timestamp: new Date() }, status: 'collector-arrived' },
+            $push: {
+                statusHistory: {
+                    status: 'collector-arrived',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'Agent',
+                    note: 'Collector arrived and checklist completed'
+                }
+            }
+        };
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error submitting checklist:", error);
+        res.status(500).send({ message: "Failed to submit checklist" });
+    }
+};
+
+const submitInspection = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { inspection, updatedBy } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: { inspection: { ...inspection, timestamp: new Date() }, status: 'inspected' },
+            $push: {
+                statusHistory: {
+                    status: 'inspected',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'Agent',
+                    note: 'Inspection report submitted'
+                }
+            }
+        };
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error submitting inspection:", error);
+        res.status(500).send({ message: "Failed to submit inspection" });
+    }
+};
+
 module.exports = {
     createPickupRequest,
     getMyPickups,
     getAllPickups,
-    updatePickupStatus
+    updatePickupStatus,
+    reschedulePickup,
+    cancelPickup,
+    submitChecklist,
+    submitInspection
 };

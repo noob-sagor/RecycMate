@@ -96,24 +96,25 @@ const PickupHistory = () => {
 
             {/* Details Modal (Same as in AllPickups but read-only) */}
             {selectedPickup && (
-                <div className="modal modal-open">
-                    <div className="modal-box max-w-3xl p-0 rounded-3xl overflow-hidden shadow-2xl bg-white">
-                        <div className="bg-gray-800 p-8 text-white relative">
+                <div className="modal modal-open z-[50]">
+                    <div className="modal-box max-w-3xl p-0 rounded-3xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto relative">
+                        <div className="bg-green-600 p-8 text-white sticky top-0 z-20">
                             <button 
                                 onClick={() => setSelectedPickup(null)}
-                                className="btn btn-sm btn-circle absolute right-6 top-6 bg-gray-700 border-none text-white hover:bg-black"
+                                className="btn btn-sm btn-circle absolute right-6 top-6 bg-green-500 border-none text-white hover:bg-green-700"
                             >
                                 ✕
                             </button>
                             <h3 className="text-2xl font-bold flex items-center gap-3">
-                                <FaTruck size={24} /> Historical Request
+                                <FaTruck size={24} /> Pickup Details
                             </h3>
-                            <p className="text-gray-300 mt-1 text-sm">
-                                Request ID: <span className="font-mono">{selectedPickup._id}</span>
+                            <p className="text-green-50 mt-1 opacity-90 text-sm font-medium tracking-wide">
+                                Request ID: <span className="font-mono text-xs">{selectedPickup._id}</span>
                             </p>
                         </div>
+
                         
-                        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                        <div className="p-8 space-y-8">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status</p>

@@ -7,5 +7,6 @@ module.exports = (usersCollection) => {
     router.get('/', (req, res) => userController.getUsers(usersCollection, req, res));
     router.get('/email/:email', (req, res) => userController.getUserByEmail(usersCollection, req, res));
     router.patch('/role/:id', (req, res) => userController.updateUserRole(usersCollection, req, res));
+    router.patch('/availability/:email', (req, res) => userController.updateAvailability(usersCollection, req, res));
     return router;
 };

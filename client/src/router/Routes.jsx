@@ -13,6 +13,7 @@ import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
 import PrivateRoute from "../routes/PrivateRoute";
 import PickupRequest from "../pages/PickupRequest";
+import CollectionCenters from "../pages/CollectionCenters";
 
 const router = createBrowserRouter([
     {
@@ -22,6 +23,10 @@ const router = createBrowserRouter([
             {
                 path: "/",
                 element: <Home />,
+            },
+            {
+                path: "/centers",
+                element: <CollectionCenters />,
             },
             {
                 path: "/login",

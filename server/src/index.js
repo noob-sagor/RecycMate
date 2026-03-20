@@ -31,14 +31,45 @@ async function run() {
     const db = client.db("recycmateDB");
     const usersCollection = db.collection("users");
     const pickupsCollection = db.collection("pickups");
+    const centersCollection = db.collection("centers");
+
+    // Sample data for centers if empty
+    const centersCount = await centersCollection.countDocuments();
+    if (centersCount === 0) {
+        await centersCollection.insertMany([
+            {
+                name: "Green Tech Recycling Hub",
+                location: "Downtown, Metro City",
+                specialties: ["Computer/Laptop", "Smartphone/Tablet"],
+                contact: "+1-234-567-8901",
+                image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                name: "Eco-Waste Center",
+                location: "West Side Industrial Park",
+                specialties: ["Battery", "Home Appliances", "Monitor/TV"],
+                contact: "+1-234-567-8902",
+                image: "https://images.unsplash.com/photo-1605600611284-1952139d8823?auto=format&fit=crop&q=80&w=400"
+            },
+            {
+                name: "Circuit Salvage Solutions",
+                location: "North Point Tech Park",
+                specialties: ["Printer/Scanner", "Cable/Charger", "Other"],
+                contact: "+1-234-567-8903",
+                image: "https://images.unsplash.com/photo-1612965110667-4187019a2882?auto=format&fit=crop&q=80&w=400"
+            }
+        ]);
+    }
 
     // Import Routes
     const userRoutes = require('./routes/user.route')(usersCollection);
     const pickupRoutes = require('./routes/pickup.route')(pickupsCollection);
+    const centerRoutes = require('./routes/center.route')(centersCollection);
 
     // Use Routes
     app.use('/users', userRoutes);
     app.use('/pickups', pickupRoutes);
+    app.use('/centers', centerRoutes);
 
     console.log("Connected to MongoDB!");
   } catch (error) {
