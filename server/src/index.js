@@ -32,6 +32,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const pickupsCollection = db.collection("pickups");
     const centersCollection = db.collection("centers");
+    const otpsCollection = db.collection("otps");
 
     // Sample data for centers if empty
     const centersCount = await centersCollection.countDocuments();
@@ -65,11 +66,13 @@ async function run() {
     const userRoutes = require('./routes/user.route')(usersCollection);
     const pickupRoutes = require('./routes/pickup.route')(pickupsCollection);
     const centerRoutes = require('./routes/center.route')(centersCollection);
+    const otpRoutes = require('./routes/otp.route')(otpsCollection);
 
     // Use Routes
     app.use('/users', userRoutes);
     app.use('/pickups', pickupRoutes);
     app.use('/centers', centerRoutes);
+    app.use('/otp', otpRoutes);
 
     console.log("Connected to MongoDB!");
   } catch (error) {

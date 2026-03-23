@@ -15,7 +15,7 @@ const Banner = () => {
           </h1>
           <p className="py-6 text-lg lg:text-xl text-gray-600">
             Join the mission to create a greener planet. Schedule pickups for your old electronics, 
-            track your recycling progress, and earn "Green Points" for your contribution.
+            track your recycling progress, and earn "Green Points" for your contributions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
             <button className="btn btn-success text-white px-8 btn-lg">Request a Pickup</button>

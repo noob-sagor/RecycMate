@@ -1,11 +1,14 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
-    const { signIn, signInWithGoogle, setUser } = useContext(AuthContext);
+    const { signIn, signInWithGoogle, setUser, resetPassword } = useContext(AuthContext);
+    const [showPassword, setShowPassword] = useState(false);
+    const emailRef = useRef(null);
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
@@ -23,6 +26,23 @@ const Login = () => {
             .catch(error => {
                 toast.error(error.message);
             });
+    };
+
+    const handleForgotPassword = async () => {
+        if (!emailRef.current) return;
+        
+        const email = emailRef.current.value;
+        if (!email) {
+            return toast.error("Please provide your email address first!");
+        }
+
+        const id = toast.loading('Sending reset email...');
+        try {
+            await resetPassword(email);
+            toast.success('Password reset email sent! Check your inbox.', { id });
+        } catch (error) {
+            toast.error(error.message, { id });
+        }
     };
 
     const handleGoogleSignIn = () => {
@@ -66,15 +86,30 @@ const Login = () => {
                             <label className="label">
                                 <span className="label-text">Email</span>
                             </label>
-                            <input name="email" type="email" placeholder="email" className="input input-bordered" required />
+                            <input name="email" type="email" ref={emailRef} placeholder="email" className="input input-bordered" required />
                         </div>
                         <div className="form-control">
                             <label className="label">
                                 <span className="label-text">Password</span>
                             </label>
-                            <input name="password" type="password" placeholder="password" className="input input-bordered" required />
+                            <div className="relative">
+                                <input 
+                                    name="password" 
+                                    type={showPassword ? "text" : "password"} 
+                                    placeholder="password" 
+                                    className="input input-bordered w-full pr-10" 
+                                    required 
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-green-600 focus:outline-none"
+                                >
+                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                            </div>
                             <label className="label">
-                                <a href="#" className="label-text-alt link link-hover">Forgot password?</a>
+                                <button type="button" onClick={handleForgotPassword} className="label-text-alt link link-hover">Forgot password?</button>
                             </label>
                         </div>
                         <div className="form-control mt-6">
