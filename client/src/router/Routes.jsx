@@ -11,6 +11,7 @@ import PickupHistory from "../pages/Dashboard/Admin/PickupHistory";
 import UserDashboard from "../pages/Dashboard/User/UserDashboard";
 import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
+import ElectricianDashboard from "../pages/Dashboard/Electrician/ElectricianDashboard";
 import PrivateRoute from "../routes/PrivateRoute";
 import PickupRequest from "../pages/PickupRequest";
 import CollectionCenters from "../pages/CollectionCenters";
@@ -67,6 +68,10 @@ const router = createBrowserRouter([
                     {
                         path: "assigned-pickups",
                         element: <AgentDashboard />,
+                    },
+                    {
+                        path: "assigned-tasks",
+                        element: <ElectricianDashboard />,
                     },
                     {
                         path: "center-inventory",

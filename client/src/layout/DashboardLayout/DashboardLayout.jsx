@@ -15,6 +15,7 @@ const DashboardLayout = () => {
     const isAgent = dbUser?.role === 'agent';
     const isStaff = dbUser?.role === 'staff';
     const isUser = dbUser?.role === 'user';
+    const isElectrician = dbUser?.role === 'electrician';
 
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
@@ -58,6 +59,15 @@ const DashboardLayout = () => {
                         <>
                             <li><NavLink to="/dashboard/center-inventory" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaTrashAlt /> Center Inventory
+                            </NavLink></li>
+                        </>
+                    )}
+
+                    {/* Electrician Specific */}
+                    {isElectrician && (
+                        <>
+                            <li><NavLink to="/dashboard/assigned-tasks" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaClipboardList /> Assigned Tasks
                             </NavLink></li>
                         </>
                     )}

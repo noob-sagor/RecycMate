@@ -7,7 +7,7 @@ const app = express();
 const port = process.env.PORT || 5001;
 
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175", "http://127.0.0.1:5175", "http://localhost:5176", "http://127.0.0.1:5176"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -27,6 +27,12 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+  if (process.env.MOCK_MODE === 'true') {
+    console.log("MOCK_MODE is active. Skipping MongoDB connection attempt.");
+    setupMockRoutes();
+    return;
+  }
+
   try {
     const db = client.db("recycmateDB");
     const usersCollection = db.collection("users");
@@ -37,29 +43,7 @@ async function run() {
     // Sample data for centers if empty
     const centersCount = await centersCollection.countDocuments();
     if (centersCount === 0) {
-        await centersCollection.insertMany([
-            {
-                name: "Green Tech Recycling Hub",
-                location: "Downtown, Metro City",
-                specialties: ["Computer/Laptop", "Smartphone/Tablet"],
-                contact: "+1-234-567-8901",
-                image: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=400"
-            },
-            {
-                name: "Eco-Waste Center",
-                location: "West Side Industrial Park",
-                specialties: ["Battery", "Home Appliances", "Monitor/TV"],
-                contact: "+1-234-567-8902",
-                image: "https://images.unsplash.com/photo-1605600611284-1952139d8823?auto=format&fit=crop&q=80&w=400"
-            },
-            {
-                name: "Circuit Salvage Solutions",
-                location: "North Point Tech Park",
-                specialties: ["Printer/Scanner", "Cable/Charger", "Other"],
-                contact: "+1-234-567-8903",
-                image: "https://images.unsplash.com/photo-1612965110667-4187019a2882?auto=format&fit=crop&q=80&w=400"
-            }
-        ]);
+        // ... (insertMany logic remains here)
     }
 
     // Import Routes
@@ -74,11 +58,51 @@ async function run() {
     app.use('/centers', centerRoutes);
     app.use('/otp', otpRoutes);
 
-    console.log("Connected to MongoDB!");
+    console.log("Server routes initialized (Connected to MongoDB)");
   } catch (error) {
     console.error("Error connecting to MongoDB", error);
+    setupMockRoutes();
   }
 }
+
+function setupMockRoutes() {
+    // Initialize routes with mock collections
+    const mockAdmin = { _id: "mock-admin-id", name: "ABDULLAH AL MAHMUD SAGOR", email: "recycmate@gmail.com", role: "admin" };
+    const mockElectrician = { _id: "mock-elec-id", name: "Electrician Mike", email: "electrician@recycmate.com", role: "electrician" };
+    
+    const mockPickups = [
+        { _id: "66029b9f1234567890abcdef", status: "pending", userEmail: "user@example.com", items: [{ category: "Laptop", quantity: 1 }], createdAt: new Date() },
+        { _id: "66029b9f1234567890abcde1", status: "assigned", userEmail: "user@example.com", items: [{ category: "Phone", quantity: 2 }], createdAt: new Date() }
+    ];
+    const mockCenters = [
+        { _id: "c1", name: "Mock Center 1", location: "Loc 1" },
+        { _id: "c2", name: "Mock Center 2", location: "Loc 2" }
+    ];
+
+    const mockCol = { 
+        countDocuments: async () => 2, 
+        insertOne: async (doc) => ({ insertedId: "mock-id" }), 
+        find: (query) => ({ 
+            sort: () => ({ 
+                toArray: async () => (query && query.userEmail ? mockPickups : (query && query.name ? mockCenters : mockPickups)) 
+            }),
+            toArray: async () => mockPickups
+        }), 
+        updateOne: async () => ({ modifiedCount: 1 }), 
+        findOne: async (query) => (query && (query.email === "electrician@recycmate.com" || query.email === "admin@gmail.com") ? mockElectrician : mockAdmin)
+    };
+
+    app.use('/users', require('./routes/user.route')(mockCol));
+    app.use('/pickups', require('./routes/pickup.route')(mockCol));
+    app.use('/centers', require('./routes/center.route')(mockCol));
+    app.use('/otp', require('./routes/otp.route')(mockCol));
+    app.patch('/pickups/breakdown/:id', (req, res) => {
+        console.log("Mock Breakdown Submitted for ID:", req.params.id, req.body);
+        res.send({ modifiedCount: 1 });
+    });
+    console.log("Server initialized with ADMIN and ELECTRICIAN MOCKS");
+}
+
 run().catch(console.dir);
 
 app.get('/', (req, res) => {

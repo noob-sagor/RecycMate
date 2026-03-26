@@ -165,6 +165,30 @@ const submitInspection = async (pickupsCollection, req, res) => {
     }
 };
 
+const submitBreakdown = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { breakdown, updatedBy } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: { breakdown: { ...breakdown, timestamp: new Date() }, status: 'broken-down' },
+            $push: {
+                statusHistory: {
+                    status: 'broken-down',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'Electrician',
+                    note: 'Component breakdown recorded'
+                }
+            }
+        };
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error submitting breakdown:", error);
+        res.status(500).send({ message: "Failed to submit breakdown" });
+    }
+};
+
 module.exports = {
     createPickupRequest,
     getMyPickups,
@@ -173,5 +197,6 @@ module.exports = {
     reschedulePickup,
     cancelPickup,
     submitChecklist,
-    submitInspection
+    submitInspection,
+    submitBreakdown
 };
