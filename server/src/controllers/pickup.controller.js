@@ -189,6 +189,49 @@ const submitBreakdown = async (pickupsCollection, req, res) => {
     }
 };
 
+const finalizeDisposal = async (pickupsCollection, req, res) => {
+    try {
+        const id = req.params.id;
+        const { disposalMethod, notes, updatedBy } = req.body;
+
+        if (!disposalMethod) {
+            return res.status(400).send({ message: "Disposal method is required" });
+        }
+
+        const validDisposalMethods = ['recycle', 'hazardous', 'refurbish'];
+        if (!validDisposalMethods.includes(disposalMethod)) {
+            return res.status(400).send({ message: "Invalid disposal method" });
+        }
+
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+            $set: {
+                disposal: {
+                    method: disposalMethod,
+                    notes: notes || '',
+                    timestamp: new Date(),
+                    recordedBy: updatedBy || 'Admin'
+                },
+                status: 'disposal-finalized'
+            },
+            $push: {
+                statusHistory: {
+                    status: 'disposal-finalized',
+                    timestamp: new Date(),
+                    updatedBy: updatedBy || 'Admin',
+                    note: `Disposal method finalized as: ${disposalMethod}`
+                }
+            }
+        };
+
+        const result = await pickupsCollection.updateOne(filter, updateDoc);
+        res.send(result);
+    } catch (error) {
+        console.error("Error finalizing disposal:", error);
+        res.status(500).send({ message: "Failed to finalize disposal" });
+    }
+};
+
 module.exports = {
     createPickupRequest,
     getMyPickups,
@@ -198,5 +241,6 @@ module.exports = {
     cancelPickup,
     submitChecklist,
     submitInspection,
-    submitBreakdown
+    submitBreakdown,
+    finalizeDisposal
 };

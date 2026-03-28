@@ -39,6 +39,7 @@ async function run() {
     const pickupsCollection = db.collection("pickups");
     const centersCollection = db.collection("centers");
     const otpsCollection = db.collection("otps");
+    const inventoryCollection = db.collection("inventory");
 
     // Sample data for centers if empty
     const centersCount = await centersCollection.countDocuments();
@@ -51,12 +52,14 @@ async function run() {
     const pickupRoutes = require('./routes/pickup.route')(pickupsCollection);
     const centerRoutes = require('./routes/center.route')(centersCollection);
     const otpRoutes = require('./routes/otp.route')(otpsCollection);
+    const inventoryRoutes = require('./routes/inventory.route')(inventoryCollection);
 
     // Use Routes
     app.use('/users', userRoutes);
     app.use('/pickups', pickupRoutes);
     app.use('/centers', centerRoutes);
     app.use('/otp', otpRoutes);
+    app.use('/inventory', inventoryRoutes);
 
     console.log("Server routes initialized (Connected to MongoDB)");
   } catch (error) {
@@ -89,13 +92,20 @@ function setupMockRoutes() {
             toArray: async () => mockPickups
         }), 
         updateOne: async () => ({ modifiedCount: 1 }), 
-        findOne: async (query) => (query && (query.email === "electrician@recycmate.com" || query.email === "admin@gmail.com") ? mockElectrician : mockAdmin)
+        findOne: async (query) => (query && (query.email === "electrician@recycmate.com" || query.email === "admin@gmail.com") ? mockElectrician : mockAdmin),
+        aggregate: () => ({
+            toArray: async () => [
+                { _id: "battery", totalQuantity: 25, storedCount: 20, soldCount: 5, avgQuantity: 1.25 },
+                { _id: "pcb", totalQuantity: 10, storedCount: 8, soldCount: 2, avgQuantity: 1 }
+            ]
+        })
     };
 
     app.use('/users', require('./routes/user.route')(mockCol));
     app.use('/pickups', require('./routes/pickup.route')(mockCol));
     app.use('/centers', require('./routes/center.route')(mockCol));
     app.use('/otp', require('./routes/otp.route')(mockCol));
+    app.use('/inventory', require('./routes/inventory.route')(mockCol));
     app.patch('/pickups/breakdown/:id', (req, res) => {
         console.log("Mock Breakdown Submitted for ID:", req.params.id, req.body);
         res.send({ modifiedCount: 1 });

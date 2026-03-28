@@ -12,5 +12,6 @@ module.exports = (pickupsCollection) => {
     router.patch('/checklist/:id', (req, res) => pickupController.submitChecklist(pickupsCollection, req, res));
     router.patch('/inspection/:id', (req, res) => pickupController.submitInspection(pickupsCollection, req, res));
     router.patch('/breakdown/:id', (req, res) => pickupController.submitBreakdown(pickupsCollection, req, res));
+    router.patch('/disposal/:id', (req, res) => pickupController.finalizeDisposal(pickupsCollection, req, res));
     return router;
 };

@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../providers/AuthProvider';
-import { FaHome, FaUsers, FaTrashAlt, FaClipboardList, FaChartLine, FaTruck, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaUsers, FaTrashAlt, FaClipboardList, FaChartLine, FaTruck, FaSignOutAlt, FaBox, FaHistory } from 'react-icons/fa';
 
 const DashboardLayout = () => {
     const { dbUser, logOut } = useContext(AuthContext);
@@ -38,6 +38,12 @@ const DashboardLayout = () => {
                             </NavLink></li>
                             <li><NavLink to="/dashboard/pickup-history" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaClipboardList /> Pickup History
+                            </NavLink></li>
+                            <li><NavLink to="/dashboard/disposal" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaTrashAlt /> Disposal Management
+                            </NavLink></li>
+                            <li><NavLink to="/dashboard/inventory" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaBox /> Inventory Ledger
                             </NavLink></li>
                             <li><NavLink to="/dashboard/reports" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaChartLine /> Impact Reports
@@ -77,6 +83,9 @@ const DashboardLayout = () => {
                         <>
                             <li><NavLink to="/dashboard/my-requests" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
                                 <FaClipboardList /> My Requests
+                            </NavLink></li>
+                            <li><NavLink to="/dashboard/request-history" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaHistory /> Request History
                             </NavLink></li>
                         </>
                     )}
