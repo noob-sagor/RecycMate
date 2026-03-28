@@ -170,21 +170,14 @@ const submitBreakdown = async (pickupsCollection, req, res) => {
         const id = req.params.id;
         const { breakdown, updatedBy } = req.body;
         const filter = { _id: new ObjectId(id) };
-        
-        // Support both old format (simple object) and new format (components array with dispositions)
-        const breakdownRecord = {
-            ...breakdown,
-            timestamp: new Date()
-        };
-        
         const updateDoc = {
-            $set: { breakdown: breakdownRecord, status: 'component-breakdown' },
+            $set: { breakdown: { ...breakdown, timestamp: new Date() }, status: 'broken-down' },
             $push: {
                 statusHistory: {
-                    status: 'component-breakdown',
+                    status: 'broken-down',
                     timestamp: new Date(),
                     updatedBy: updatedBy || 'Electrician',
-                    note: breakdown.components ? `Component breakdown recorded: ${breakdown.components.length} components identified` : 'Component breakdown recorded'
+                    note: 'Component breakdown recorded'
                 }
             }
         };
@@ -193,45 +186,6 @@ const submitBreakdown = async (pickupsCollection, req, res) => {
     } catch (error) {
         console.error("Error submitting breakdown:", error);
         res.status(500).send({ message: "Failed to submit breakdown" });
-    }
-};
-
-// Feature 10: Submit component dispositions (functional, repairable, resellable, waste)
-const submitComponentDispositions = async (pickupsCollection, req, res) => {
-    try {
-        const id = req.params.id;
-        const { components, updatedBy } = req.body;
-        const filter = { _id: new ObjectId(id) };
-        
-        // Validate that components have disposition field
-        const validComponents = components.every(c => 
-            ['functional', 'repairable', 'resellable', 'waste'].includes(c.disposition)
-        );
-        
-        if (!validComponents) {
-            return res.status(400).send({ message: "Invalid disposition values. Must be: functional, repairable, resellable, or waste" });
-        }
-        
-        const updateDoc = {
-            $set: { 
-                'breakdown.components': components,
-                'breakdown.dispositionRecordedAt': new Date(),
-                status: 'disposition-assigned'
-            },
-            $push: {
-                statusHistory: {
-                    status: 'disposition-assigned',
-                    timestamp: new Date(),
-                    updatedBy: updatedBy || 'Electrician',
-                    note: `Component dispositions assigned: ${components.map(c => `${c.name} (${c.disposition})`).join(', ')}`
-                }
-            }
-        };
-        const result = await pickupsCollection.updateOne(filter, updateDoc);
-        res.send(result);
-    } catch (error) {
-        console.error("Error submitting component dispositions:", error);
-        res.status(500).send({ message: "Failed to submit component dispositions" });
     }
 };
 
@@ -244,6 +198,5 @@ module.exports = {
     cancelPickup,
     submitChecklist,
     submitInspection,
-    submitBreakdown,
-    submitComponentDispositions
+    submitBreakdown
 };
