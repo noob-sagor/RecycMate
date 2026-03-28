@@ -115,6 +115,34 @@ const Login = () => {
                         <div className="form-control mt-6">
                             <button className="btn btn-success text-white">Login</button>
                         </div>
+                        <div className="form-control mt-2 grid grid-cols-2 gap-2">
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const mockUser = { email: 'electrician@recycmate.com', displayName: 'Electrician Ed', role: 'electrician' };
+                                    setUser(mockUser);
+                                    setDbUser(mockUser);
+                                    navigate('/dashboard');
+                                }} 
+                                className="btn btn-warning btn-outline border-dashed text-[10px]"
+                                id="mock-login-electrician"
+                            >
+                                DEBUG: Electrician
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => {
+                                    const mockUser = { email: 'sales@recycmate.com', displayName: 'Sales Sam', role: 'sales' };
+                                    setUser(mockUser);
+                                    setDbUser(mockUser);
+                                    navigate('/dashboard/resell-list');
+                                }} 
+                                className="btn btn-info btn-outline border-dashed text-[10px]"
+                                id="mock-login-sales"
+                            >
+                                DEBUG: Sales
+                            </button>
+                        </div>
                     </form>
                     <div className="divider px-8">OR</div>
                     <div className="px-8 pb-8">

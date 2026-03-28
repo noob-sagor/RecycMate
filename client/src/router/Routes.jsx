@@ -12,6 +12,7 @@ import UserDashboard from "../pages/Dashboard/User/UserDashboard";
 import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
 import ElectricianDashboard from "../pages/Dashboard/Electrician/ElectricianDashboard";
+import ResellList from "../pages/Dashboard/Common/ResellList";
 import PrivateRoute from "../routes/PrivateRoute";
 import PickupRequest from "../pages/PickupRequest";
 import CollectionCenters from "../pages/CollectionCenters";
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
                     {
                         path: "center-inventory",
                         element: <StaffDashboard />,
+                    },
+                    {
+                        path: "resell-list",
+                        element: <ResellList />,
                     },
                 ],
             },

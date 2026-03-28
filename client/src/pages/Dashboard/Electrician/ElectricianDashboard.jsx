@@ -11,10 +11,10 @@ const ElectricianDashboard = () => {
     const [selectedPickup, setSelectedPickup] = useState(null);
     const [showBreakdown, setShowBreakdown] = useState(false);
     const [breakdownData, setBreakdownData] = useState({
-        battery: false,
-        pcb: false,
-        screen: false,
-        casing: false,
+        battery: 'functional',
+        pcb: 'functional',
+        screen: 'functional',
+        casing: 'functional',
         notes: ''
     });
 
@@ -43,7 +43,7 @@ const ElectricianDashboard = () => {
                 toast.success("Component breakdown submitted successfully!");
                 setAssignedPickups(assignedPickups.map(p => p._id === selectedPickup._id ? { ...p, status: 'broken-down' } : p));
                 setShowBreakdown(false);
-                setBreakdownData({ battery: false, pcb: false, screen: false, casing: false, notes: '' });
+                setBreakdownData({ battery: 'functional', pcb: 'functional', screen: 'functional', casing: 'functional', notes: '' });
             }
         } catch (error) {
             toast.error("Failed to submit breakdown.");
@@ -136,72 +136,52 @@ const ElectricianDashboard = () => {
                             <FaMicrochip className="text-green-600" /> Component Breakdown
                         </h3>
                         <div className="space-y-6">
-                            <p className="text-sm text-gray-500 font-medium">Select the components present and functional in this device:</p>
+                            <p className="text-sm text-gray-500 font-medium px-1">Select the disposition for each component found in this device:</p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.battery}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, battery: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaBatteryFull className="text-green-600" />
-                                        <span className="text-sm font-bold">Battery</span>
+                            <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1 pr-2 custom-scrollbar">
+                                {[
+                                    { id: 'battery', name: 'Battery', icon: <FaBatteryFull className="text-green-600" /> },
+                                    { id: 'pcb', name: 'PCB / Motherboard', icon: <FaMicrochip className="text-blue-600" /> },
+                                    { id: 'screen', name: 'Screen / Display', icon: <FaDesktop className="text-purple-600" /> },
+                                    { id: 'casing', name: 'Outer Casing', icon: <FaBoxOpen className="text-orange-600" /> }
+                                ].map((component) => (
+                                    <div key={component.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            {component.icon}
+                                            <span className="font-bold text-gray-800 text-sm">{component.name}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            {['functional', 'repairable', 'resellable', 'waste'].map((disposition) => (
+                                                <button
+                                                    key={disposition}
+                                                    type="button"
+                                                    onClick={() => setBreakdownData({ ...breakdownData, [component.id]: disposition })}
+                                                    className={`btn btn-xs h-9 rounded-xl font-bold capitalize border-none transition-all ${breakdownData[component.id] === disposition 
+                                                        ? 'bg-green-600 text-white shadow-md shadow-green-100' 
+                                                        : 'bg-white text-gray-400 hover:bg-gray-100'}`}
+                                                >
+                                                    {disposition}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.pcb}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, pcb: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaMicrochip className="text-blue-600" />
-                                        <span className="text-sm font-bold">PCB / Motherboard</span>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.screen}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, screen: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaDesktop className="text-purple-600" />
-                                        <span className="text-sm font-bold">Screen / Display</span>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.casing}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, casing: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaBoxOpen className="text-orange-600" />
-                                        <span className="text-sm font-bold">Outer Casing</span>
-                                    </div>
-                                </label>
-                            </div>
+                                ))}
 
-                            <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Technical Notes</label>
-                                <textarea
-                                    className="textarea textarea-bordered w-full h-24 rounded-xl focus:ring-2 ring-green-100"
-                                    placeholder="Add any specific component details or damage notes..."
-                                    value={breakdownData.notes}
-                                    onChange={(e) => setBreakdownData({ ...breakdownData, notes: e.target.value })}
-                                ></textarea>
+                                <div className="pt-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2 ml-1">Technical Notes</label>
+                                    <textarea
+                                        className="textarea textarea-bordered w-full h-24 rounded-2xl focus:ring-4 ring-green-50 border-gray-100 text-sm"
+                                        placeholder="Add any specific component details or damage notes..."
+                                        value={breakdownData.notes}
+                                        onChange={(e) => setBreakdownData({ ...breakdownData, notes: e.target.value })}
+                                    ></textarea>
+                                </div>
                             </div>
                         </div>
-                        <div className="modal-action mt-8 gap-4">
-                            <button onClick={() => setShowBreakdown(false)} className="btn btn-ghost px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest">Cancel</button>
-                            <button onClick={handleBreakdownSubmit} className="btn btn-success text-white px-8 rounded-xl shadow-lg shadow-green-200">Submit Breakdown</button>
+
+                        <div className="modal-action mt-8 gap-3">
+                            <button onClick={() => setShowBreakdown(false)} className="btn btn-ghost px-6 rounded-2xl font-bold text-[10px] uppercase tracking-widest">Cancel</button>
+                            <button onClick={handleBreakdownSubmit} className="btn btn-success text-white px-8 rounded-2xl shadow-xl shadow-green-200 font-bold border-none">Submit Breakdown</button>
                         </div>
                     </div>
                     <div className="modal-backdrop bg-black/40 backdrop-blur-sm" onClick={() => setShowBreakdown(false)}></div>
