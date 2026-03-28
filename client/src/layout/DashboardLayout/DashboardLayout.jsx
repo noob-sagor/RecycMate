@@ -16,6 +16,7 @@ const DashboardLayout = () => {
     const isStaff = dbUser?.role === 'staff';
     const isUser = dbUser?.role === 'user';
     const isElectrician = dbUser?.role === 'electrician';
+    const isSales = dbUser?.role === 'sales';
 
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
@@ -76,6 +77,22 @@ const DashboardLayout = () => {
                                 <FaClipboardList /> Assigned Tasks
                             </NavLink></li>
                         </>
+                    )}
+
+                    {/* Sales Specific */}
+                    {isSales && (
+                        <>
+                            <li><NavLink to="/dashboard/resell-list" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                                <FaClipboardList /> Resell List
+                            </NavLink></li>
+                        </>
+                    )}
+
+                    {/* Admin Specific Additional (Oversight) */}
+                    {isAdmin && (
+                        <li><NavLink to="/dashboard/resell-list" className={({ isActive }) => isActive ? "bg-green-800" : "hover:bg-green-600"}>
+                            <FaClipboardList /> Resell Oversight
+                        </NavLink></li>
                     )}
 
                     {/* Standard User Specific */}
