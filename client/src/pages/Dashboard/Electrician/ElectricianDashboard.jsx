@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaMicrochip, FaBatteryFull, FaDesktop, FaBoxOpen, FaClipboardList, FaCheckCircle, FaExclamationTriangle, FaTools } from 'react-icons/fa';
+import { FaMicrochip, FaBatteryFull, FaDesktop, FaBoxOpen, FaClipboardList, FaCheckCircle, FaExclamationTriangle, FaTools, FaTrash, FaPlus } from 'react-icons/fa';
 import useAuth from '../../../hooks/useAuth';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -10,20 +10,52 @@ const ElectricianDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPickup, setSelectedPickup] = useState(null);
     const [showBreakdown, setShowBreakdown] = useState(false);
-    const [breakdownData, setBreakdownData] = useState({
-        battery: false,
-        pcb: false,
-        screen: false,
-        casing: false,
+    
+    // Feature 9 & 10: Component breakdown with dispositions
+    const [components, setComponents] = useState([]);
+    const [newComponent, setNewComponent] = useState({
+        type: 'battery',
+        name: 'Battery',
+        quantity: 1,
+        condition: 'unknown',
+        disposition: 'unknown',
         notes: ''
     });
+    const [technicalNotes, setTechnicalNotes] = useState('');
+
+    // Component types mapping
+    const componentTypes = {
+        battery: { name: 'Battery', icon: FaBatteryFull, color: 'text-green-600' },
+        pcb: { name: 'PCB / Motherboard', icon: FaMicrochip, color: 'text-blue-600' },
+        screen: { name: 'Screen / Display', icon: FaDesktop, color: 'text-purple-600' },
+        casing: { name: 'Outer Casing', icon: FaBoxOpen, color: 'text-orange-600' },
+        charger: { name: 'Charger / Power Adapter', icon: FaMicrochip, color: 'text-yellow-600' },
+        storage: { name: 'Storage / Hard Drive', icon: FaMicrochip, color: 'text-indigo-600' },
+        camera: { name: 'Camera Module', icon: FaMicrochip, color: 'text-pink-600' },
+        other: { name: 'Other Component', icon: FaMicrochip, color: 'text-gray-600' }
+    };
+
+    const dispositionOptions = [
+        { value: 'unknown', label: 'Unknown', bgColor: 'bg-gray-100', textColor: 'text-gray-700' },
+        { value: 'functional', label: 'Functional', bgColor: 'bg-green-100', textColor: 'text-green-700' },
+        { value: 'repairable', label: 'Repairable', bgColor: 'bg-blue-100', textColor: 'text-blue-700' },
+        { value: 'resellable', label: 'Resellable', bgColor: 'bg-purple-100', textColor: 'text-purple-700' },
+        { value: 'waste', label: 'Waste / Dispose', bgColor: 'bg-red-100', textColor: 'text-red-700' }
+    ];
+
+    const conditionOptions = [
+        { value: 'unknown', label: 'Unknown' },
+        { value: 'excellent', label: 'Excellent' },
+        { value: 'good', label: 'Good' },
+        { value: 'damaged', label: 'Damaged' },
+        { value: 'broken', label: 'Broken' }
+    ];
 
     useEffect(() => {
         const fetchPickups = async () => {
             try {
                 const res = await axios.get(`${import.meta.env.VITE_API_URL}/pickups/all`);
-                // Electricians typically handle pickups that are 'inspected' or 'collector-arrived'
-                setAssignedPickups(res.data.filter(p => !['completed', 'cancelled', 'broken-down'].includes(p.status)));
+                setAssignedPickups(res.data.filter(p => !['completed', 'cancelled', 'disposition-assigned'].includes(p.status)));
             } catch (error) {
                 console.error("Error fetching pickups:", error);
             } finally {
@@ -33,21 +65,109 @@ const ElectricianDashboard = () => {
         fetchPickups();
     }, []);
 
+    const handleAddComponent = () => {
+        if (!newComponent.type || newComponent.quantity < 1) {
+            toast.error('Please select component type and quantity');
+            return;
+        }
+        
+        const component = {
+            ...newComponent,
+            id: Date.now()
+        };
+        
+        setComponents([...components, component]);
+        setNewComponent({
+            type: 'battery',
+            name: 'Battery',
+            quantity: 1,
+            condition: 'unknown',
+            disposition: 'unknown',
+            notes: ''
+        });
+        toast.success('Component added!');
+    };
+
+    const handleRemoveComponent = (id) => {
+        setComponents(components.filter(c => c.id !== id));
+        toast.success('Component removed!');
+    };
+
+    const handleUpdateComponent = (id, field, value) => {
+        setComponents(components.map(c =>
+            c.id === id ? { ...c, [field]: value } : c
+        ));
+    };
+
+    const handleComponentTypeChange = (type) => {
+        const componentInfo = componentTypes[type];
+        setNewComponent({
+            ...newComponent,
+            type,
+            name: componentInfo.name
+        });
+    };
+
     const handleBreakdownSubmit = async () => {
         try {
-            const res = await axios.patch(`${import.meta.env.VITE_API_URL}/pickups/breakdown/${selectedPickup._id}`, {
-                breakdown: breakdownData,
-                updatedBy: user.email
-            });
-            if (res.data.modifiedCount > 0) {
-                toast.success("Component breakdown submitted successfully!");
-                setAssignedPickups(assignedPickups.map(p => p._id === selectedPickup._id ? { ...p, status: 'broken-down' } : p));
-                setShowBreakdown(false);
-                setBreakdownData({ battery: false, pcb: false, screen: false, casing: false, notes: '' });
+            if (components.length === 0) {
+                toast.error('Please add at least one component!');
+                return;
+            }
+
+            // First submit: Component breakdown recording
+            const breakdownRes = await axios.patch(
+                `${import.meta.env.VITE_API_URL}/pickups/breakdown/${selectedPickup._id}`,
+                {
+                    breakdown: { components, notes: technicalNotes, type: 'detailed' },
+                    updatedBy: user.email
+                }
+            );
+
+            if (breakdownRes.data.modifiedCount > 0) {
+                // Second submit: Component dispositions assignment
+                const dispositionRes = await axios.patch(
+                    `${import.meta.env.VITE_API_URL}/pickups/dispositions/${selectedPickup._id}`,
+                    {
+                        components: components,
+                        updatedBy: user.email
+                    }
+                );
+
+                if (dispositionRes.data.modifiedCount > 0) {
+                    toast.success('Component breakdown and dispositions recorded successfully!');
+                    setAssignedPickups(assignedPickups.map(p =>
+                        p._id === selectedPickup._id ? { ...p, status: 'disposition-assigned' } : p
+                    ));
+                    setShowBreakdown(false);
+                    resetForm();
+                } else {
+                    throw new Error('Failed to record dispositions');
+                }
             }
         } catch (error) {
-            toast.error("Failed to submit breakdown.");
+            console.error('Error:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit breakdown.');
         }
+    };
+
+    const resetForm = () => {
+        setComponents([]);
+        setNewComponent({
+            type: 'battery',
+            name: 'Battery',
+            quantity: 1,
+            condition: 'unknown',
+            disposition: 'unknown',
+            notes: ''
+        });
+        setTechnicalNotes('');
+    };
+
+    const handleOpenBreakdown = (pickup) => {
+        setSelectedPickup(pickup);
+        setShowBreakdown(true);
+        resetForm();
     };
 
     return (
@@ -108,7 +228,7 @@ const ElectricianDashboard = () => {
                                         </td>
                                         <td className="pr-8 text-right">
                                             <button
-                                                onClick={() => { setSelectedPickup(pickup); setShowBreakdown(true); }}
+                                                onClick={() => handleOpenBreakdown(pickup)}
                                                 className="btn btn-sm btn-green bg-green-600 hover:bg-green-700 text-white border-none rounded-xl font-bold"
                                             >
                                                 Start Breakdown
@@ -128,83 +248,202 @@ const ElectricianDashboard = () => {
                 )}
             </div>
 
-            {/* Breakdown Modal */}
+            {/* Enhanced Component Breakdown Modal - Features 9 & 10 */}
             {showBreakdown && (
                 <div className="modal modal-open z-[60]">
-                    <div className="modal-box rounded-3xl p-8 bg-white max-w-lg relative">
-                        <h3 className="text-2xl font-black text-gray-800 mb-6 flex items-center gap-3">
-                            <FaMicrochip className="text-green-600" /> Component Breakdown
+                    <div className="modal-box rounded-3xl p-8 bg-white max-w-4xl relative max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-2xl font-black text-gray-800 mb-2 flex items-center gap-3">
+                            <FaMicrochip className="text-green-600" /> Micro-Component Breakdown & Disposition
                         </h3>
-                        <div className="space-y-6">
-                            <p className="text-sm text-gray-500 font-medium">Select the components present and functional in this device:</p>
+                        <p className="text-sm text-gray-500 mb-6">Feature 9 & 10: Record components and assign disposition (functional, repairable, resellable, waste)</p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.battery}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, battery: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaBatteryFull className="text-green-600" />
-                                        <span className="text-sm font-bold">Battery</span>
+                        <div className="space-y-8">
+                            {/* Component Addition Section */}
+                            <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-2xl border-2 border-green-200">
+                                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <FaPlus className="text-green-600" /> Add Component
+                                </h4>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    {/* Component Type Selector */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">Component Type</label>
+                                        <select
+                                            value={newComponent.type}
+                                            onChange={(e) => handleComponentTypeChange(e.target.value)}
+                                            className="select select-bordered w-full rounded-xl bg-white focus:ring-2 ring-green-300"
+                                        >
+                                            {Object.entries(componentTypes).map(([key, value]) => (
+                                                <option key={key} value={key}>{value.name}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.pcb}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, pcb: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaMicrochip className="text-blue-600" />
-                                        <span className="text-sm font-bold">PCB / Motherboard</span>
+
+                                    {/* Quantity */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">Quantity</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={newComponent.quantity}
+                                            onChange={(e) => setNewComponent({ ...newComponent, quantity: parseInt(e.target.value) })}
+                                            className="input input-bordered w-full rounded-xl focus:ring-2 ring-green-300"
+                                        />
                                     </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.screen}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, screen: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaDesktop className="text-purple-600" />
-                                        <span className="text-sm font-bold">Screen / Display</span>
+
+                                    {/* Condition */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">Condition</label>
+                                        <select
+                                            value={newComponent.condition}
+                                            onChange={(e) => setNewComponent({ ...newComponent, condition: e.target.value })}
+                                            className="select select-bordered w-full rounded-xl bg-white focus:ring-2 ring-green-300"
+                                        >
+                                            {conditionOptions.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                </label>
-                                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-green-50 transition-all">
-                                    <input
-                                        type="checkbox"
-                                        className="checkbox checkbox-success"
-                                        checked={breakdownData.casing}
-                                        onChange={(e) => setBreakdownData({ ...breakdownData, casing: e.target.checked })}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <FaBoxOpen className="text-orange-600" />
-                                        <span className="text-sm font-bold">Outer Casing</span>
+
+                                    {/* Disposition */}
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">Disposition</label>
+                                        <select
+                                            value={newComponent.disposition}
+                                            onChange={(e) => setNewComponent({ ...newComponent, disposition: e.target.value })}
+                                            className="select select-bordered w-full rounded-xl bg-white focus:ring-2 ring-green-300"
+                                        >
+                                            {dispositionOptions.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                </label>
+                                </div>
+
+                                {/* Notes for Component */}
+                                <div className="mb-4">
+                                    <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">Component Notes (Optional)</label>
+                                    <textarea
+                                        placeholder="Any specific details about this component..."
+                                        value={newComponent.notes}
+                                        onChange={(e) => setNewComponent({ ...newComponent, notes: e.target.value })}
+                                        className="textarea textarea-bordered w-full h-16 rounded-xl focus:ring-2 ring-green-300"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleAddComponent}
+                                    className="btn btn-success text-white w-full gap-2 rounded-xl font-bold"
+                                >
+                                    <FaPlus /> Add This Component
+                                </button>
                             </div>
 
+                            {/* Components List */}
+                            {components.length > 0 ? (
+                                <div className="bg-white border-2 border-gray-200 rounded-2xl p-6">
+                                    <h4 className="text-lg font-bold text-gray-800 mb-4">Added Components ({components.length})</h4>
+                                    <div className="overflow-x-auto">
+                                        <table className="table w-full text-sm">
+                                            <thead className="bg-gray-100">
+                                                <tr>
+                                                    <th className="font-bold">Component</th>
+                                                    <th className="font-bold">Qty</th>
+                                                    <th className="font-bold">Condition</th>
+                                                    <th className="font-bold">Disposition</th>
+                                                    <th className="font-bold text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {components.map(comp => {
+                                                    const disposition = dispositionOptions.find(d => d.value === comp.disposition);
+                                                    return (
+                                                        <tr key={comp.id} className="hover:bg-gray-50">
+                                                            <td className="font-bold text-gray-700">{comp.name}</td>
+                                                            <td className="text-center">{comp.quantity}</td>
+                                                            <td>
+                                                                <select
+                                                                    value={comp.condition}
+                                                                    onChange={(e) => handleUpdateComponent(comp.id, 'condition', e.target.value)}
+                                                                    className="select select-xs select-bordered rounded-lg"
+                                                                >
+                                                                    {conditionOptions.map(opt => (
+                                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                            <td>
+                                                                <select
+                                                                    value={comp.disposition}
+                                                                    onChange={(e) => handleUpdateComponent(comp.id, 'disposition', e.target.value)}
+                                                                    className="select select-xs select-bordered rounded-lg"
+                                                                >
+                                                                    {dispositionOptions.map(opt => (
+                                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <button
+                                                                    onClick={() => handleRemoveComponent(comp.id)}
+                                                                    className="btn btn-xs btn-error text-white"
+                                                                >
+                                                                    <FaTrash />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 text-center">
+                                    <p className="text-gray-600 font-medium">No components added yet. Add at least one component above.</p>
+                                </div>
+                            )}
+
+                            {/* Technical Notes */}
                             <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Technical Notes</label>
+                                <label className="text-xs font-bold text-gray-600 uppercase tracking-widest block mb-2">
+                                    General Technical Notes
+                                </label>
                                 <textarea
-                                    className="textarea textarea-bordered w-full h-24 rounded-xl focus:ring-2 ring-green-100"
-                                    placeholder="Add any specific component details or damage notes..."
-                                    value={breakdownData.notes}
-                                    onChange={(e) => setBreakdownData({ ...breakdownData, notes: e.target.value })}
-                                ></textarea>
+                                    placeholder="Add overall technical observations, damage patterns, hazardous materials, etc..."
+                                    value={technicalNotes}
+                                    onChange={(e) => setTechnicalNotes(e.target.value)}
+                                    className="textarea textarea-bordered w-full h-24 rounded-xl focus:ring-2 ring-green-300"
+                                />
                             </div>
                         </div>
-                        <div className="modal-action mt-8 gap-4">
-                            <button onClick={() => setShowBreakdown(false)} className="btn btn-ghost px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest">Cancel</button>
-                            <button onClick={handleBreakdownSubmit} className="btn btn-success text-white px-8 rounded-xl shadow-lg shadow-green-200">Submit Breakdown</button>
+
+                        {/* Modal Actions */}
+                        <div className="modal-action mt-8 gap-4 justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowBreakdown(false);
+                                    resetForm();
+                                }}
+                                className="btn btn-ghost px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBreakdownSubmit}
+                                className="btn btn-success text-white px-8 rounded-xl shadow-lg shadow-green-200 font-bold"
+                            >
+                                Submit Breakdown & Dispositions
+                            </button>
                         </div>
                     </div>
-                    <div className="modal-backdrop bg-black/40 backdrop-blur-sm" onClick={() => setShowBreakdown(false)}></div>
+                    <div
+                        className="modal-backdrop bg-black/40 backdrop-blur-sm"
+                        onClick={() => {
+                            setShowBreakdown(false);
+                            resetForm();
+                        }}
+                    ></div>
                 </div>
             )}
         </div>
