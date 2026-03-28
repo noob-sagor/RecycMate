@@ -39,6 +39,7 @@ async function run() {
     const pickupsCollection = db.collection("pickups");
     const centersCollection = db.collection("centers");
     const otpsCollection = db.collection("otps");
+    const inventoryCollection = db.collection("inventory");
 
     // Sample data for centers if empty
     const centersCount = await centersCollection.countDocuments();
@@ -52,6 +53,7 @@ async function run() {
     const pickupRoutes = require('./routes/pickup.route')(pickupsCollection, resellCollection);
     const centerRoutes = require('./routes/center.route')(centersCollection);
     const otpRoutes = require('./routes/otp.route')(otpsCollection);
+    const inventoryRoutes = require('./routes/inventory.route')(inventoryCollection);
     const resellRoutes = require('./routes/resell.route')(db.collection("resellList"));
 
     // Use Routes
@@ -59,6 +61,7 @@ async function run() {
     app.use('/pickups', pickupRoutes);
     app.use('/centers', centerRoutes);
     app.use('/otp', otpRoutes);
+    app.use('/inventory', inventoryRoutes);
     app.use('/resell', resellRoutes);
 
     console.log("Server routes initialized (Connected to MongoDB)");
@@ -101,7 +104,7 @@ function setupMockRoutes() {
             }),
             toArray: async () => mockResellItems
         }), 
-        updateOne: async () => ({ modifiedCount: 1 }),
+        updateOne: async () => ({ modifiedCount: 1 }), 
         insertMany: async (docs) => ({ insertedCount: docs.length, insertedIds: {} }),
         findOne: async (query) => {
             if (query && query.email === "electrician@recycmate.com") return mockElectrician;
@@ -109,7 +112,13 @@ function setupMockRoutes() {
             if (query && (query.email === "admin@gmail.com" || query.role === "admin")) return mockAdmin;
             if (query && query._id) return mockPickups[0];
             return mockAdmin;
-        }
+        },
+        aggregate: () => ({
+            toArray: async () => [
+                { _id: "battery", totalQuantity: 25, storedCount: 20, soldCount: 5, avgQuantity: 1.25 },
+                { _id: "pcb", totalQuantity: 10, storedCount: 8, soldCount: 2, avgQuantity: 1 }
+            ]
+        })
     };
 
     app.use('/users', require('./routes/user.route')(mockCol));
@@ -117,6 +126,7 @@ function setupMockRoutes() {
     app.use('/pickups', require('./routes/pickup.route')(mockCol, mockResellCol));
     app.use('/centers', require('./routes/center.route')(mockCol));
     app.use('/otp', require('./routes/otp.route')(mockCol));
+    app.use('/inventory', require('./routes/inventory.route')(mockCol));
     app.use('/resell', require('./routes/resell.route')(mockCol));
     app.patch('/pickups/breakdown/:id', (req, res) => {
         console.log("Mock Breakdown Submitted for ID:", req.params.id, req.body);

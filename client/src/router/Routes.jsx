@@ -8,7 +8,10 @@ import DashboardHome from "../pages/Dashboard/DashboardHome";
 import ManageUsers from "../pages/Dashboard/Admin/ManageUsers";
 import AllPickups from "../pages/Dashboard/Admin/AllPickups";
 import PickupHistory from "../pages/Dashboard/Admin/PickupHistory";
+import DisposalManagement from "../pages/Dashboard/Admin/DisposalManagement";
+import InventoryLedger from "../pages/Dashboard/Admin/InventoryLedger";
 import UserDashboard from "../pages/Dashboard/User/UserDashboard";
+import RequestHistory from "../pages/Dashboard/User/RequestHistory";
 import AgentDashboard from "../pages/Dashboard/Agent/AgentDashboard";
 import StaffDashboard from "../pages/Dashboard/Staff/StaffDashboard";
 import ElectricianDashboard from "../pages/Dashboard/Electrician/ElectricianDashboard";
@@ -63,8 +66,20 @@ const router = createBrowserRouter([
                         element: <PickupHistory />,
                     },
                     {
+                        path: "disposal",
+                        element: <DisposalManagement />,
+                    },
+                    {
+                        path: "inventory",
+                        element: <InventoryLedger />,
+                    },
+                    {
                         path: "user-dashboard",
                         element: <UserDashboard />,
+                    },
+                    {
+                        path: "request-history",
+                        element: <RequestHistory />,
                     },
                     {
                         path: "assigned-pickups",
